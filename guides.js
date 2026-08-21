@@ -33,7 +33,13 @@ const CSS = [
 ".gcard{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:12px 0}",
 ".gcard:hover{border-color:var(--brand)}",
 ".gcard h3{margin:0 0 5px;font-size:18px;color:var(--ink)}",
-".gcard p{margin:0;color:var(--mut);font-size:15px}"
+".gcard p{margin:0;color:var(--mut);font-size:15px}",
+".consent{position:fixed;left:14px;right:14px;bottom:14px;z-index:120;max-width:640px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 18px 50px rgba(15,23,42,.22);display:flex;gap:14px;align-items:center;flex-wrap:wrap}",
+".consent p{margin:0;flex:1 1 280px;font-size:14px;color:var(--mut);line-height:1.5}",
+".consent div{display:flex;gap:8px;flex:0 0 auto}",
+".consent button{cursor:pointer;font:inherit;font-size:14px;font-weight:700;border-radius:10px;padding:9px 16px;border:0}",
+".consent .yes{background:var(--brand);color:#fff}",
+".consent .no{background:transparent;color:var(--brand);border:1.5px solid var(--line)}"
 ].join('');
 
 const AUTHOR = "Written by Ruhul Amin, Hertfordshire. I built the free MOT history checker on this site. I am not a mechanic, so everything here is sourced from DVSA and GOV.UK rather than from opinion.";
@@ -436,7 +442,28 @@ function foot(){
  "<footer><p>", DISCLAIM, "</p>",
  "<p>Sources: GOV.UK Getting an MOT, DVSA MOT testing data, DVSA MOT History API. Figures checked August 2026.</p>",
  "<p><a href='/guides'>All guides</a> &middot; <a href='/'>MOT history checker</a></p></footer>",
- "</div></body></html>"
+ "<p>Something wrong or out of date? Email <a href='mailto:support@adminruhulamin.co.uk'>support@adminruhulamin.co.uk</a> and a person will read it.</p>",
+'<script>' + [
+'(function(){',
+'var K="bmc_consent_v1",G="G-VX0H5Z7VVV";',
+'function load(){if(window.__gaOn)return;window.__gaOn=1;',
+'var s=document.createElement("script");s.async=1;',
+'s.src="https://www.googletagmanager.com/gtag/js?id="+G;document.head.appendChild(s);',
+'window.dataLayer=window.dataLayer||[];window.gtag=function(){window.dataLayer.push(arguments)};',
+'window.gtag("js",new Date());window.gtag("config",G,{anonymize_ip:true});}',
+'function set(v){try{localStorage.setItem(K,v)}catch(e){}',
+'var b=document.querySelector(".consent");if(b&&b.parentNode)b.parentNode.removeChild(b);',
+'if(v==="yes")load();}',
+'var c=null;try{c=localStorage.getItem(K)}catch(e){}',
+'if(c==="yes"){load();}else if(c!=="no"){',
+'var d=document.createElement("div");d.className="consent";',
+'d.innerHTML="<p>We use Google Analytics to see which guides people actually read. No advertising cookies.</p><div><button type=\\"button\\" class=\\"no\\">No thanks</button><button type=\\"button\\" class=\\"yes\\">Allow</button></div>";',
+'document.body.appendChild(d);',
+'d.querySelector(".yes").addEventListener("click",function(){set("yes")});',
+'d.querySelector(".no").addEventListener("click",function(){set("no")});',
+'}})();'
+].join('') + '<' + '/script>',
+"</div></body></html>"
  ].join('');
 }
 function related(slug){
