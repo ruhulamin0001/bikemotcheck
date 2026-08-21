@@ -252,6 +252,12 @@ const CSS = [
 '.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);background:#0e1117;color:#fff;padding:11px 18px;',
 'border-radius:11px;z-index:99;font-size:14px;opacity:0;transition:.25s;box-shadow:0 12px 30px rgba(0,0,0,.3)}',
 '.toast.on{opacity:1;transform:translate(-50%,0)}',
+'.consent{position:fixed;left:14px;right:14px;bottom:14px;z-index:120;max-width:640px;margin:0 auto;'
++'background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;'
++'box-shadow:0 18px 50px rgba(15,23,42,.22);display:flex;gap:14px;align-items:center;flex-wrap:wrap}',
+'.consent p{margin:0;flex:1 1 280px;font-size:14px;color:var(--mut);line-height:1.5}',
+'.consent div{display:flex;gap:8px;flex:0 0 auto}',
+'.consent .btn{min-height:0;padding:9px 16px;font-size:14px}',
 '*:focus-visible{outline:2.5px solid var(--i1);outline-offset:2px;border-radius:6px}',
 '@media print{.mesh,header.site,form.search,.recent,.trust,.actions,.nav,footer,.noprint{display:none!important}',
 'body{background:#fff}.card{box-shadow:none;border:1px solid #ccc;break-inside:avoid}',
@@ -325,6 +331,7 @@ function footer(){
   '<p><strong>Bike MOT Check UK</strong> reads the official DVSA MOT History API. It is free, needs no account, and we do not store the registrations you look up.</p>',
   '<p>Data covers England, Scotland and Wales. Northern Ireland MOTs are administered by the DVA and are not included. An MOT is a roadworthiness snapshot on the day of the test, not a mechanical warranty, and this site is general information rather than advice on any individual purchase.</p>',
   '<p><a href="/guides">MOT guides</a> &middot; <a href="/compare">Compare two vehicles</a> &middot; <a href="/">Run a check</a></p>',
+  '<p>Something wrong, out of date, or a vehicle we got wrong? Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> and a person will read it.</p>',
   '<p class="meta">Built by Ruhul Amin, Hertfordshire. Figures checked August 2026.</p>',
   '</div></footer></body></html>'
   ].join('');
