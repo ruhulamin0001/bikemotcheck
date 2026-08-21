@@ -56,45 +56,6 @@ function pushRecent(reg, name){
   }catch(e){}
   paintRecent();
 
-/* ---------- analytics, loaded ONLY after the visitor agrees ----------
-   UK PECR requires opt in for non essential cookies, so nothing loads until
-   Allow is clicked. Declining is remembered too, so we stop asking. */
-var GA_ID = 'G-VX0H5Z7VVV';
-var CKEY = 'bmc_consent_v1';
-function loadGA(){
-  if(window.__gaOn) return;
-  window.__gaOn = true;
-  var s = document.createElement('script');
-  s.async = true;
-  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
-  document.head.appendChild(s);
-  window.dataLayer = window.dataLayer || [];
-  window.gtag = function(){ window.dataLayer.push(arguments); };
-  window.gtag('js', new Date());
-  window.gtag('config', GA_ID, { anonymize_ip: true });
-}
-function setConsent(v){
-  try{ localStorage.setItem(CKEY, v); }catch(e){}
-  var bar = document.querySelector('.consent');
-  if(bar && bar.parentNode) bar.parentNode.removeChild(bar);
-  if(v === 'yes') loadGA();
-  toast(v === 'yes' ? 'Thanks, analytics on' : 'No analytics, noted');
-}
-function consentInit(){
-  var c = null;
-  try{ c = localStorage.getItem(CKEY); }catch(e){}
-  if(c === 'yes'){ loadGA(); return; }
-  if(c === 'no') return;
-  var bar = document.createElement('div');
-  bar.className = 'consent';
-  bar.innerHTML = '<p>We use Google Analytics to see which pages people actually find useful. '
-    + 'The registrations you look up are never sent to it, and there are no advertising cookies here.</p>'
-    + '<div><button type="button" class="btn ghost js-consent-no">No thanks</button>'
-    + '<button type="button" class="btn js-consent-yes">Allow</button></div>';
-  document.body.appendChild(bar);
-}
-consentInit();
-
 }
 function paintRecent(){
   var box = $('#recent'); if(!box) return;
@@ -530,6 +491,45 @@ var cf = $('#cf');
 if(cf) cf.addEventListener('submit', function(e){ e.preventDefault(); runCompare($('#ra').value, $('#rb').value); });
 
 paintRecent();
+
+/* ---------- analytics, loaded ONLY after the visitor agrees ----------
+   UK PECR requires opt in for non essential cookies, so nothing loads until
+   Allow is clicked. Declining is remembered too, so we stop asking. */
+var GA_ID = 'G-VX0H5Z7VVV';
+var CKEY = 'bmc_consent_v1';
+function loadGA(){
+  if(window.__gaOn) return;
+  window.__gaOn = true;
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+  document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function(){ window.dataLayer.push(arguments); };
+  window.gtag('js', new Date());
+  window.gtag('config', GA_ID, { anonymize_ip: true });
+}
+function setConsent(v){
+  try{ localStorage.setItem(CKEY, v); }catch(e){}
+  var bar = document.querySelector('.consent');
+  if(bar && bar.parentNode) bar.parentNode.removeChild(bar);
+  if(v === 'yes') loadGA();
+  toast(v === 'yes' ? 'Thanks, analytics on' : 'No analytics, noted');
+}
+function consentInit(){
+  var c = null;
+  try{ c = localStorage.getItem(CKEY); }catch(e){}
+  if(c === 'yes'){ loadGA(); return; }
+  if(c === 'no') return;
+  var bar = document.createElement('div');
+  bar.className = 'consent';
+  bar.innerHTML = '<p>We use Google Analytics to see which pages people actually find useful. '
+    + 'The registrations you look up are never sent to it, and there are no advertising cookies here.</p>'
+    + '<div><button type="button" class="btn ghost js-consent-no">No thanks</button>'
+    + '<button type="button" class="btn js-consent-yes">Allow</button></div>';
+  document.body.appendChild(bar);
+}
+consentInit();
 
 (function boot(){
   var q = new URLSearchParams(location.search);
