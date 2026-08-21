@@ -413,7 +413,7 @@ function render(v,regCode){
 function shareIt(r){
   var url='https://bikemotcheckuk.cloud/check/'+r;
   if(navigator.share){ navigator.share({title:'MOT history for '+r,url:url}).catch(function(){}); return; }
-  if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ alert('Link copied:\n'+url); }); }
+  if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ alert('Link copied. '+url); }); }
   else { prompt('Copy this link', url); }
 }
 out.addEventListener('click',function(e){ var b=e.target.closest('.js-share'); if(b) shareIt(b.getAttribute('data-reg')); });
