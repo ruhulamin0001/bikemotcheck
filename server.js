@@ -350,75 +350,113 @@ function chart(reads){
 }
 </script>
 <script>
-function render(v,regCode){
-  if(!v){ out.innerHTML='<div class="msg">No record returned.</div>'; return; }
-  var tests=(v.motTests||[]).slice().sort(function(a,b){ return String(b.completedDate).localeCompare(String(a.completedDate)); });
-  var latest=null;
-  for(var i=0;i<tests.length;i++){ if(/pass/i.test(tests[i].testResult||'')){ latest=tests[i]; break; } }
-  if(!latest) latest=tests[0];
-  var name=[v.make,v.model].filter(Boolean).join(' ')||'Vehicle';
-  var h='';
-
-  /* MOT status banner */
-  var exp = (latest&&latest.expiryDate) ? latest.expiryDate : v.motTestDueDate;
-  var d = days(exp);
-  if(v.motTestDueDate && !tests.length){
-    h+='<div class="card"><div class="status warn">First MOT due '+fmt(v.motTestDueDate)+'. No tests on record yet.</div></div>';
-  } else if(d!=null){
-    h+='<div class="card"><div class="status '+(d<0?'bad':(d<30?'warn':'ok'))+'">'+
-      (d<0 ? 'MOT expired '+Math.abs(d)+' day'+(Math.abs(d)===1?'':'s')+' ago, on '+fmt(exp)
-           : 'MOT valid until '+fmt(exp)+' &middot; '+d+' day'+(d===1?'':'s')+' left')+'</div>'+
-      '<div class="actions">'+
-        '<a href="/calendar/'+encodeURIComponent(regCode)+'.ics?d='+encodeURIComponent(String(exp).slice(0,10))+'&v='+encodeURIComponent(name)+'">Add MOT date to calendar</a>'+
-        '<button type="button" class="js-share" data-reg="'+esc(regCode)+'">Copy link to this check</button>'+
-        '<button type="button" onclick="window.print()">Print or save as PDF</button>'+
-      '</div></div>';
-  }
-
-  /* buyer report */
-  var a=analyse(v,tests);
-  h+='<div class="card"><h2>Buyer report for '+esc(regCode)+'</h2><ul class="flags">'+
-     a.flags.map(function(x){ return '<li><span class="dot d-'+x.c+'"></span><div><b>'+esc(x.t)+'</b><span>'+esc(x.d)+'</span></div></li>'; }).join('')+
-     '</ul></div>';
-
-  /* vehicle details */
-  h+='<div class="card"><h2>'+esc(name)+' &middot; '+esc(v.registration||regCode)+'</h2><div class="rows">'+
-     row('Make',v.make)+row('Model',v.model)+row('Colour',v.primaryColour)+row('Fuel',v.fuelType)+
-     row('Engine size',v.engineSize?num(v.engineSize)+' cc':'')+row('First used',fmt(v.firstUsedDate))+
-     row('Registered',fmt(v.registrationDate))+row('Manufactured',fmt(v.manufactureDate))+
-     row('MOT tests on record',tests.length?String(tests.length):'')+
-     '</div></div>';
-
-  /* chart */
-  h+=chart(a.reads);
-
-  /* full history */
-  if(tests.length){
-    h+='<div class="card"><h2>Every MOT test</h2>'+tests.map(function(t){
-      var pass=/pass/i.test(t.testResult||'');
-      var ds=(t.defects||t.rfrAndComments||[]);
-      return '<div class="test"><div class="top"><span class="pill '+(pass?'p-pass':'p-fail')+'">'+esc(t.testResult||'')+'</span><span>'+fmt(t.completedDate)+'</span></div>'+
-        '<p class="meta">'+(t.odometerValue?num(t.odometerValue)+' '+esc(t.odometerUnit||'mi'):'No mileage recorded')+
-        (t.expiryDate?' &middot; valid to '+fmt(t.expiryDate):'')+
-        (t.motTestNumber?' &middot; test '+esc(t.motTestNumber):'')+'</p>'+
-        (ds.length?'<ul class="defects">'+ds.map(function(x){
-          var ty=String(x.type||'').replace(/[^A-Za-z]/g,'').toUpperCase();
-          return '<li class="'+ty+'"><span class="tag">'+esc(x.type||'')+(x.dangerous?' &middot; DANGEROUS':'')+'</span>'+esc(x.text)+'</li>';
-        }).join('')+'</ul>':'')+'</div>';
-    }).join('')+'</div>';
-  }
-  out.innerHTML=h;
-  out.scrollIntoView({behavior:'smooth',block:'start'});
+var $=function(s){return document.querySelector(s)};
+var ST=document.createElement('style');
+ST.textContent='.js-share{cursor:pointer;border:1px solid #cfd8d3;background:#fff;border-radius:8px;padding:8px 14px;font:inherit;font-size:14px}.js-share:hover{background:#f2f7f5}.chartwrap{margin:14px 0;padding:8px 0}.flag{display:flex;gap:10px;align-items:flex-start;margin:10px 0}.flag p{margin:2px 0 0}.dot{width:12px;height:12px;border-radius:50%;flex:0 0 12px;margin-top:5px}.d-green{background:#0a8f5b}.d-amber{background:#d18a00}.d-red{background:#d33}.icsbtn{display:inline-block;margin-top:8px;font-size:14px}.tag.dang{background:#d33;color:#fff}';
+document.head.appendChild(ST);
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function num(v){var n=parseInt(String(v==null?'':v).replace(/[^0-9]/g,''),10);return isNaN(n)?null:n}
+function dt(s){if(!s)return null;var x=new Date(s);return isNaN(x.getTime())?null:x}
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmt(s){var x=dt(s);if(!x)return '';return x.getDate()+' '+MON[x.getMonth()]+' '+x.getFullYear()}
+function mi(t){var n=num(t.odometerValue);if(n==null)return null;var u=String(t.odometerUnit==null?'':t.odometerUnit).toUpperCase();if(u.charAt(0)==='K')n=Math.round(n*0.621371);return n}
+function cm(n){return String(n).replace(/(.)(?=(...)+$)/g,'$1,')}
+var BIKES=['honda','yamaha','suzuki','kawasaki','ducati','ktm','triumph','harley-davidson','aprilia','piaggio','vespa','lexmoto','sinnis','royal enfield','moto guzzi','husqvarna','benelli','keeway','zontes','mutt','herald','fantic','sym','kymco'];
+function isBike(v){var m=String(v.make==null?'':v.make).toLowerCase();if(BIKES.indexOf(m)===-1)return false;var e=num(v.engineSize);if(e==null)return true;return e<1400}
+var UK_CAR=7100, UK_BIKE=3000, UK_PASS=78.3;
+function analyse(v){
+ var raw=(v.motTests||[]).slice();
+ var tests=raw.filter(function(t){return !!t.completedDate});
+ tests.sort(function(a,b){return new Date(a.completedDate)-new Date(b.completedDate)});
+ var total=tests.length;
+ var passed=0; tests.forEach(function(t){ if(String(t.testResult||'').toUpperCase().indexOf('PASS')===0) passed++ });
+ var passRate= total? Math.round(passed/total*1000)/10 : null;
+ var pts=[]; tests.forEach(function(t){ var m=mi(t); var x=dt(t.completedDate); if(m!=null&&x&&m>0) pts.push({t:x.getTime(),m:m,date:t.completedDate}) });
+ var back=[]; for(var i=1;i<pts.length;i++){ if(pts[i].m < pts[i-1].m-100){ pts[i].back=true; back.push({a:pts[i-1],b:pts[i]}) } }
+ var apm=null; if(pts.length>=2){ var yrs=(pts[pts.length-1].t-pts[0].t)/31557600000; var dm=pts[pts.length-1].m-pts[0].m; if(yrs>0.5&&dm>0) apm=Math.round(dm/yrs) }
+ var dang=0, defs=[]; tests.forEach(function(t){ (t.defects||[]).forEach(function(x){ if(x.dangerous) dang++; defs.push(String(x.text||'').toLowerCase()) }) });
+ var kws=['tyre','brake','suspension','lamp','light','corros','exhaust','steering','emission','wiper','mirror','shock','leak','play','bulb'];
+ var themes=[]; kws.forEach(function(k){ var n=0; defs.forEach(function(s){ if(s.indexOf(k)>-1) n++ }); if(n>=3) themes.push({k:k,n:n}) });
+ themes.sort(function(a,b){return b.n-a.n});
+ var gaps=[]; for(var g=1;g<tests.length;g++){ var a1=dt(tests[g-1].completedDate), b1=dt(tests[g].completedDate); if(a1&&b1){ var days=Math.round((b1-a1)/86400000); if(days>430) gaps.push({from:tests[g-1].completedDate,to:tests[g].completedDate,days:days}) } }
+ var expiry=null; raw.forEach(function(t){ if(t.expiryDate){ if(!expiry||t.expiryDate>expiry) expiry=t.expiryDate } });
+ var bike=isBike(v);
+ return {tests:tests,total:total,passed:passed,passRate:passRate,pts:pts,back:back,apm:apm,dang:dang,themes:themes,gaps:gaps,expiry:expiry,bike:bike,bench:bike?UK_BIKE:UK_CAR,latest:pts.length?pts[pts.length-1].m:null};
 }
-function shareIt(r){
-  var url='https://bikemotcheckuk.cloud/check/'+r;
-  if(navigator.share){ navigator.share({title:'MOT history for '+r,url:url}).catch(function(){}); return; }
-  if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ alert('Link copied. '+url); }); }
-  else { prompt('Copy this link', url); }
+function chart(pts){
+ if(!pts||pts.length<2) return '';
+ var W=680,H=230,P=44;
+ var xs=[],ys=[]; pts.forEach(function(p){xs.push(p.t);ys.push(p.m)});
+ var x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs); if(x1===x0) return '';
+ var y1=Math.max.apply(null,ys)*1.08;
+ var px=function(t){return P+(t-x0)/(x1-x0)*(W-P-18)};
+ var py=function(m){return H-30-(m/y1)*(H-30-16)};
+ var path=''; pts.forEach(function(p,i){ path+=(i?' L':'M')+px(p.t).toFixed(1)+' '+py(p.m).toFixed(1) });
+ var dots=''; pts.forEach(function(p){ dots+='<circle cx="'+px(p.t).toFixed(1)+'" cy="'+py(p.m).toFixed(1)+'" r="3.6" fill="'+(p.back?'#d33':'#0a8f5b')+'"></circle>' });
+ var grid=''; for(var k=0;k<=3;k++){ var vv=y1*k/3, yy=py(vv); grid+='<line x1="'+P+'" y1="'+yy.toFixed(1)+'" x2="'+(W-18)+'" y2="'+yy.toFixed(1)+'" stroke="#e6e6e6" stroke-width="1"></line><text x="2" y="'+(yy+4).toFixed(1)+'" fill="#8a8a8a" font-size="11">'+Math.round(vv/1000)+'k</text>' }
+ var lab='<text x="'+P+'" y="'+(H-8)+'" fill="#8a8a8a" font-size="11">'+new Date(x0).getFullYear()+'</text><text x="'+(W-44)+'" y="'+(H-8)+'" fill="#8a8a8a" font-size="11">'+new Date(x1).getFullYear()+'</text>';
+ return '<div class="chartwrap"><h3>Recorded mileage over time</h3><svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Recorded mileage over time">'+grid+lab+'<path d="'+path+'" fill="none" stroke="#0a8f5b" stroke-width="2.5"></path>'+dots+'</svg></div>';
 }
-out.addEventListener('click',function(e){ var b=e.target.closest('.js-share'); if(b) shareIt(b.getAttribute('data-reg')); });
-reg.addEventListener('input',function(){ reg.value=reg.value.toUpperCase(); });
-if(reg.value.trim().length>1){ run(); }
+function flagsOf(a,v){
+ var f=[];
+ if(a.back.length){ f.push({c:'red',t:'Recorded mileage goes backwards',d:'On '+fmt(a.back[0].b.date)+' the reading was '+cm(a.back[0].b.m)+' miles, lower than '+cm(a.back[0].a.m)+' recorded on '+fmt(a.back[0].a.date)+'. That can be a clerical error, a replaced instrument cluster, or a clocked vehicle. Ask the seller for the explanation in writing.'}); }
+ else if(a.pts.length>=2){ f.push({c:'green',t:'Mileage reads consistently forward',d:'Every recorded reading is equal to or higher than the one before it across '+a.pts.length+' tests.'}); }
+ if(a.apm!=null){ var pc=Math.round(a.apm/a.bench*100); var c= pc>150?'amber':(pc<45?'amber':'green');
+  f.push({c:c,t:'About '+cm(a.apm)+' miles a year',d:'The UK average is roughly '+cm(a.bench)+' miles a year for a '+(a.bike?'motorcycle':'car')+', so this is around '+pc+'% of typical use. '+(pc>150?'High mileage is not automatically bad, but expect more wear on the clutch, suspension and bushes.':(pc<45?'Very low mileage can mean short cold journeys, which is hard on the exhaust, brakes and battery.':'That is in the normal range.'))}); }
+ if(a.passRate!=null){ var pcOk=a.passRate>=UK_PASS;
+  f.push({c:pcOk?'green':'amber',t:'Passed '+a.passed+' of '+a.total+' tests, '+a.passRate+'%',d:'The UK average first time pass rate is about '+UK_PASS+'%. '+(pcOk?'This vehicle is at or above that.':'This vehicle is below that, so budget for repair work at test time.')}); }
+ if(a.dang>0){ f.push({c:'red',t:a.dang+' dangerous defect'+(a.dang>1?'s':'')+' recorded',d:'A dangerous defect means the vehicle should not have been driven until it was repaired. Ask what was done and whether there is a receipt.'}); }
+ if(a.themes.length){ var s=a.themes.slice(0,3).map(function(x){return x.k+' ('+x.n+')'}).join(', ');
+  f.push({c:'amber',t:'Recurring theme: '+s,d:'The same area has come up repeatedly across tests. That is usually either an unfixed underlying fault or an owner who only repairs at MOT time.'}); }
+ if(a.gaps.length){ f.push({c:'amber',t:'Gap of '+a.gaps[0].days+' days between tests',d:'Between '+fmt(a.gaps[0].from)+' and '+fmt(a.gaps[0].to)+' there is no MOT record. The vehicle may have been off the road, declared SORN, or driven untested.'}); }
+ if(v.hasOutstandingRecall==='Yes'){ f.push({c:'red',t:'Outstanding safety recall',d:'DVSA records an unresolved manufacturer recall. A franchised dealer will normally fix this free of charge.'}); }
+ return f;
+}
+function render(v){
+ var out=$('#out');
+ if(!v || v.error){ out.innerHTML='<div class="card"><p><strong>'+esc(v&&v.error?v.error:'No record found')+'</strong></p><p class="meta">Check the registration and try again. DVSA holds MOT records for vehicles tested in England, Scotland and Wales. Northern Ireland is not covered.</p></div>'; return }
+ var a=analyse(v);
+ var reg=String(v.registration||'').toUpperCase();
+ var name=String(v.make||'')+' '+String(v.model||'');
+ document.title=reg+' MOT history, mileage and failures | Bike MOT Check UK';
+ var h='';
+ h+='<div class="card"><div class="top"><div><h2>'+esc(name)+'</h2><p class="meta">'+esc(reg)+(v.primaryColour?' &middot; '+esc(v.primaryColour):'')+(v.fuelType?' &middot; '+esc(v.fuelType):'')+(v.engineSize?' &middot; '+esc(v.engineSize)+'cc':'')+(v.firstUsedDate?' &middot; first used '+fmt(v.firstUsedDate):'')+'</p></div>';
+ h+='<div><button type="button" class="js-share" data-reg="'+esc(reg)+'">Share this check</button></div></div>';
+ h+='<h3>Buyer report for '+esc(reg)+'</h3><div class="flags">';
+ flagsOf(a,v).forEach(function(f){ h+='<div class="flag"><span class="dot d-'+f.c+'"></span><div><strong>'+esc(f.t)+'</strong><p class="meta">'+esc(f.d)+'</p></div></div>' });
+ h+='</div>';
+ if(a.latest!=null) h+='<p class="meta">Latest recorded mileage: <strong>'+cm(a.latest)+' miles</strong></p>';
+ if(a.expiry){ var ex=dt(a.expiry); var days=ex?Math.round((ex-new Date())/86400000):null;
+  h+='<p class="meta">MOT valid until <strong>'+fmt(a.expiry)+'</strong>'+(days!=null?(days>=0?' ('+days+' days left)':' (expired '+Math.abs(days)+' days ago)'):'')+'</p>';
+  h+='<a class="icsbtn" href="/calendar/'+encodeURIComponent(reg)+'.ics?d='+encodeURIComponent(a.expiry)+'&v='+encodeURIComponent(name.trim())+'">Add MOT reminder to calendar</a>'; }
+ h+=chart(a.pts);
+ h+='</div>';
+ h+='<div class="rows"><h3>Full MOT history, '+a.total+' tests</h3>';
+ a.tests.slice().reverse().forEach(function(t){
+  var p=String(t.testResult||'').toUpperCase().indexOf('PASS')===0;
+  var m=mi(t);
+  h+='<div class="test"><div class="top"><span class="pill '+(p?'p-pass':'p-fail')+'">'+(p?'PASS':'FAIL')+'</span> <strong>'+fmt(t.completedDate)+'</strong></div>';
+  h+='<p class="meta">'+(m!=null?cm(m)+' miles':'no odometer reading')+(t.expiryDate?' &middot; valid to '+fmt(t.expiryDate):'')+'</p>';
+  if(t.defects&&t.defects.length){ h+='<ul class="defects">'; t.defects.forEach(function(x){ h+='<li><span class="tag'+(x.dangerous?' dang':'')+'">'+esc(String(x.type||'').replace(/_/g,' '))+(x.dangerous?' DANGEROUS':'')+'</span> '+esc(x.text||'')+'</li>' }); h+='</ul>' }
+  h+='</div>';
+ });
+ h+='</div>';
+ out.innerHTML=h;
+}
+function toast(m){ var e=document.createElement('div'); e.textContent=m; e.setAttribute('style','position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:8px;z-index:9999;font-size:14px'); document.body.appendChild(e); setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e) },1800) }
+function shareIt(reg){ var url=location.origin+'/check/'+encodeURIComponent(reg);
+ if(navigator.share){ navigator.share({title:'MOT history for '+reg, url:url}).catch(function(){}); return }
+ if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ toast('Link copied') }).catch(function(){ prompt('Copy this link', url) }); return }
+ prompt('Copy this link', url); }
+document.addEventListener('click',function(e){ var b=e.target.closest?e.target.closest('.js-share'):null; if(b){ shareIt(b.getAttribute('data-reg')) } });
+function run(){ var el=$('#reg'); var reg=String(el.value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+ if(reg.length<2) return;
+ $('#out').innerHTML='<div class="card"><p>Checking '+esc(reg)+' with DVSA...</p></div>';
+ fetch('/api/mot?reg='+encodeURIComponent(reg)).then(function(r){return r.json()}).then(render).catch(function(){ $('#out').innerHTML='<div class="card"><p>Could not reach the DVSA service just now. Please try again in a moment.</p></div>' }); }
+$('#f').addEventListener('submit',function(e){ e.preventDefault(); run() });
+$('#reg').addEventListener('input',function(){ this.value=this.value.toUpperCase() });
+if(location.pathname.indexOf('/check/')===0 && !$('#reg').value){ $('#reg').value=decodeURIComponent(location.pathname.slice(7)).toUpperCase() }
+if(String($('#reg').value||'').trim().length>1){ run() }
 </script>
 </body>
 </html>`;
