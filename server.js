@@ -301,11 +301,13 @@ function head(title, desc, canon){
   '<meta property="og:title" content="' + esc(title) + '">',
   '<meta property="og:description" content="' + esc(desc) + '">',
   '<meta property="og:url" content="' + canon + '">',
-  '<meta property="og:image" content="' + SITE + '/og.svg">',
+  '<meta property="og:image" content="' + SITE + '/og.png">',
+  '<meta property="og:image:width" content="1200">',
+  '<meta property="og:image:height" content="630">',
   '<meta name="twitter:card" content="summary_large_image">',
   '<meta name="twitter:title" content="' + esc(title) + '">',
   '<meta name="twitter:description" content="' + esc(desc) + '">',
-  '<meta name="twitter:image" content="' + SITE + '/og.svg">',
+  '<meta name="twitter:image" content="' + SITE + '/og.png">',
   jsonLd(),
   '<style>' + CSS + '</style>',
   '</head><body>',
@@ -450,6 +452,13 @@ var CLIENT_JS = '';
 try { CLIENT_JS = require('fs').readFileSync(__dirname + '/client.js', 'utf8'); }
 catch(e) { CLIENT_JS = 'console.error("client.js missing");'; }
 
+var OG_PNG = null, ICON_PNG = null;
+try {
+  var _a = require('fs').readFileSync(__dirname + '/assets.b64', 'utf8').split('\n');
+  if (_a[0]) OG_PNG = Buffer.from(_a[0].trim(), 'base64');
+  if (_a[1]) ICON_PNG = Buffer.from(_a[1].trim(), 'base64');
+} catch(e) {}
+
 const MANIFEST = JSON.stringify({
   name: 'Bike MOT Check UK', short_name: 'MOT Check',
   description: 'Free MOT history check for any UK registration.',
@@ -493,8 +502,11 @@ http.createServer(function(req, res){
   if(path === '/robots.txt') return send(res, 200, 'text/plain; charset=utf-8', ROBOTS, 'public, max-age=3600');
   if(path === '/sitemap.xml') return send(res, 200, 'application/xml; charset=utf-8', SITEMAP, 'public, max-age=3600');
   if(path === '/manifest.webmanifest') return send(res, 200, 'application/manifest+json', MANIFEST, 'public, max-age=86400');
-  if(path === '/icon.svg' || path === '/favicon.svg' || path === '/apple-touch-icon.png' || path === '/favicon.ico')
+  if(path === '/icon.svg' || path === '/favicon.svg' || path === '/favicon.ico')
     return send(res, 200, 'image/svg+xml', ICON_SVG, 'public, max-age=604800');
+  if(path === '/og.png' && OG_PNG) return send(res, 200, 'image/png', OG_PNG, 'public, max-age=604800');
+  if(path === '/apple-touch-icon.png' && ICON_PNG) return send(res, 200, 'image/png', ICON_PNG, 'public, max-age=604800');
+  if(path === '/apple-touch-icon.png') return send(res, 200, 'image/svg+xml', ICON_SVG, 'public, max-age=604800');
   if(path === '/og.svg') return send(res, 200, 'image/svg+xml', OG_SVG, 'public, max-age=604800');
   if(path === '/app.js') return send(res, 200, 'application/javascript; charset=utf-8', CLIENT_JS, 'public, max-age=600');
 
