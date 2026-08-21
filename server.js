@@ -105,6 +105,7 @@ const PAGE = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="google-site-verification" content="KhRBFVP7OVrVE72qDvl89_7zPquRjgVfkbOfVHh3Y6w">
+<meta name="msvalidate.01" content="5FFD67C969758EBF56D9070C84A31597">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Free MOT History Check UK - Mileage, Failures and Advisories | Bike MOT Check UK</title>
 <meta name="description" content="Check any UK vehicle's full MOT history free. Every test, mileage reading, advisory and failure since 2005, plus an automatic buyer's report that flags mileage anomalies and repeat faults.">
