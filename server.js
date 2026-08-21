@@ -370,14 +370,14 @@ function render(v,regCode){
            : 'MOT valid until '+fmt(exp)+' &middot; '+d+' day'+(d===1?'':'s')+' left')+'</div>'+
       '<div class="actions">'+
         '<a href="/calendar/'+encodeURIComponent(regCode)+'.ics?d='+encodeURIComponent(String(exp).slice(0,10))+'&v='+encodeURIComponent(name)+'">Add MOT date to calendar</a>'+
-        '<button type="button" onclick="shareIt(\''+regCode+'\')">Copy link to this check</button>'+
+        '<button type="button" class="js-share" data-reg="'+esc(regCode)+'">Copy link to this check</button>'+
         '<button type="button" onclick="window.print()">Print or save as PDF</button>'+
       '</div></div>';
   }
 
   /* buyer report */
   var a=analyse(v,tests);
-  h+='<div class="card"><h2>Buyer\'s report for '+esc(regCode)+'</h2><ul class="flags">'+
+  h+='<div class="card"><h2>Buyer report for '+esc(regCode)+'</h2><ul class="flags">'+
      a.flags.map(function(x){ return '<li><span class="dot d-'+x.c+'"></span><div><b>'+esc(x.t)+'</b><span>'+esc(x.d)+'</span></div></li>'; }).join('')+
      '</ul></div>';
 
@@ -416,6 +416,7 @@ function shareIt(r){
   if(navigator.clipboard){ navigator.clipboard.writeText(url).then(function(){ alert('Link copied:\n'+url); }); }
   else { prompt('Copy this link', url); }
 }
+out.addEventListener('click',function(e){ var b=e.target.closest('.js-share'); if(b) shareIt(b.getAttribute('data-reg')); });
 reg.addEventListener('input',function(){ reg.value=reg.value.toUpperCase(); });
 if(reg.value.trim().length>1){ run(); }
 </script>
