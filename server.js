@@ -314,7 +314,7 @@ function head(title, desc, canon){
   '<div class="mesh" aria-hidden="true"><i></i><i></i><i></i></div>',
   '<header class="site"><div class="wrap">',
   '<a class="brand" href="/">' + ICON_SVG + '<span>Bike MOT Check<span style="color:var(--mut);font-weight:600"> UK</span></span></a>',
-  '<nav class="nav"><a href="/guides">Guides</a><a href="/compare">Compare</a></nav>',
+  '<nav class="nav"><a href="/ulez">ULEZ</a><a href="/guides">Guides</a><a href="/compare">Compare</a></nav>',
   '</div></header>'
   ].join('');
 }
@@ -344,6 +344,67 @@ function searchBlock(prefill){
   ].join('');
 }
 
+function ulezPage(){
+  return [
+  head('ULEZ Check: Is My Car ULEZ Compliant? Free Registration Check',
+       'Free ULEZ and Clean Air Zone check for any UK registration. See whether a vehicle is likely to pay the London ULEZ charge, and what Birmingham, Bristol and the Scottish low emission zones cost.',
+       SITE + '/ulez'),
+  '<main class="wrap">',
+  '<section class="hero">',
+  '<h1>Is my car <span class="grad">ULEZ compliant?</span></h1>',
+  '<p class="sub">Enter a registration and we will estimate its emissions zone status from the official DVSA record, alongside its full MOT history. Free, no sign up.</p>',
+  searchBlock(''),
+  '<div class="trust"><span>London ULEZ</span><span>Birmingham and Bristol CAZ</span><span>Scottish LEZ</span><span>No sign up</span></div>',
+  '</section>',
+  '<div id="out"></div>',
+  '<section>',
+  '<h2>What decides whether you pay</h2>',
+  '<p>Emissions zones do not care how old your car looks or what it costs. They care about one thing: the <strong>Euro emissions standard</strong> it was built to.</p>',
+  '<table><thead><tr><th>Vehicle</th><th>Standard needed</th><th>Roughly means first registered</th></tr></thead><tbody>',
+  '<tr><td>Petrol car</td><td>Euro 4</td><td>From January 2006</td></tr>',
+  '<tr><td>Diesel car</td><td>Euro 6</td><td>From 1 September 2015</td></tr>',
+  '<tr><td>Diesel van</td><td>Euro 6</td><td>From September 2016</td></tr>',
+  '<tr><td>Motorcycle or moped</td><td>Euro 3</td><td>From around July 2007</td></tr>',
+  '<tr><td>Fully electric or hydrogen</td><td>Exempt</td><td>Any date</td></tr>',
+  '<tr><td>Historic vehicle</td><td>Exempt</td><td>Built over 40 years ago, and in the historic tax class</td></tr>',
+  '</tbody></table>',
+  '<p class="meta">Registration date is a guide, not a guarantee. Some vehicles met the standard before it became compulsory, and a few later ones did not. That is why we call our result an estimate and point you at the official checker.</p>',
+  '<h2>What it costs if you are not compliant</h2>',
+  '<table><thead><tr><th>Zone</th><th>Daily charge for a non compliant car</th></tr></thead><tbody>',
+  '<tr><td><strong>London ULEZ</strong>, all 32 boroughs and the City</td><td><strong>&pound;12.50</strong>, 24 hours a day, every day of the year</td></tr>',
+  '<tr><td>Birmingham Clean Air Zone, inside the A4540 ring road</td><td>&pound;8</td></tr>',
+  '<tr><td>Bristol Clean Air Zone, central area</td><td>&pound;9</td></tr>',
+  '<tr><td>Bath, Sheffield, Bradford, Portsmouth, Tyneside</td><td>No charge for private cars, commercial vehicles only</td></tr>',
+  '<tr><td>Glasgow, Edinburgh, Aberdeen, Dundee</td><td>There is no charge to pay. Non compliant vehicles are simply banned, and the penalty starts at &pound;60</td></tr>',
+  '</tbody></table>',
+  '<p>The London number is the one that hurts. <strong>Driving in five days a week at &pound;12.50 a day is about &pound;3,000 a year</strong>, which is more than many people pay to insure the car. If you are buying and the vehicle is not compliant, that is a real cost and a real negotiating point.</p>',
+  '<h2>Scotland works completely differently</h2>',
+  '<p>England charges you. Scotland does not. In Glasgow, Edinburgh, Aberdeen and Dundee you cannot pay a daily fee to enter, because non compliant vehicles are not allowed in at all. Drive in and a camera issues a penalty starting at &pound;60. If you are buying a car to use in a Scottish city, compliance is not a cost question, it is a can-you-use-it-at-all question.</p>',
+  '<h2>Frequently asked</h2>',
+  '<h3>Is my petrol car ULEZ compliant?</h3>',
+  '<p>Almost certainly yes if it was first registered from 2006 onwards, and quite possibly yes if it is from 2003 to 2005, because many manufacturers met Euro 4 early. Check the registration to be sure.</p>',
+  '<h3>Why is my diesel not compliant when it is only ten years old?</h3>',
+  '<p>Because diesels are held to Euro 6 rather than Euro 4, and Euro 6 only became compulsory for new cars in September 2015. A 2014 diesel is usually Euro 5 and does pay.</p>',
+  '<h3>Does the ULEZ charge apply at weekends?</h3>',
+  '<p>Yes. It runs 24 hours a day, every day except Christmas Day.</p>',
+  '<h3>Are electric cars exempt?</h3>',
+  '<p>Yes. Fully electric and hydrogen vehicles produce no tailpipe emissions and are not charged anywhere.</p>',
+  '<h3>Is this the official checker?</h3>',
+  '<p>No, and we say so plainly. The DVSA MOT dataset we read does not publish the Euro standard, so we estimate it from fuel type and first registration date. For the definitive answer use the free official checker at <a href="https://tfl.gov.uk/modes/driving/check-your-vehicle/" rel="noopener" target="_blank">TfL</a>. Our value is that you get the emissions estimate together with the full MOT and mileage history in one search.</p>',
+  '</section>',
+  '<section class="card glass">',
+  '<h2 style="margin-top:0">Related guides</h2>',
+  '<ul>',
+  '<li><a href="/guides/mot-statistics-uk">UK MOT statistics 2026</a></li>',
+  '<li><a href="/guides/what-fails-an-mot-uk">What actually fails an MOT</a></li>',
+  '<li><a href="/guides/spot-a-clocked-car-uk">How to spot a clocked car</a></li>',
+  '</ul>',
+  '</section>',
+  '</main>',
+  footer(),
+  '<script src="/app.js" defer></' + 'script>'
+  ].join('');
+}
 function homePage(prefill){
   return [
   head(prefill ? (prefill + ' MOT history, mileage and failures | Bike MOT Check UK')
@@ -477,6 +538,7 @@ const SITEMAP = [
   '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
   '<url><loc>' + SITE + '/</loc><priority>1.0</priority><changefreq>weekly</changefreq></url>',
   '<url><loc>' + SITE + '/compare</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>',
+  '<url><loc>' + SITE + '/ulez</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
   '</urlset>'
 ].join('');
 
@@ -531,6 +593,7 @@ http.createServer(function(req, res){
     return res.end(ics);
   }
 
+  if(path === '/ulez') return send(res, 200, 'text/html; charset=utf-8', ulezPage());
   if(path === '/compare') return send(res, 200, 'text/html; charset=utf-8', comparePage());
 
   if(path.indexOf('/check/') === 0){
