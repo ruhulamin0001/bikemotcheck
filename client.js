@@ -134,6 +134,86 @@ function ring(days){
 }
 
 /* ---------- buyer report flags ---------- */
+/* ---------- ULEZ and Clean Air Zone estimate ---------- */
+/* Estimated from fuel type and first registration date on the DVSA record.
+   Registration date is indicative of the Euro standard, not proof of it. */
+function ulezCheck(v, bike){
+  var fuel = String(v.fuelType == null ? '' : v.fuelType).toUpperCase();
+  var d = dt(v.firstUsedDate) || dt(v.registrationDate) || dt(v.manufactureDate);
+  var res = { known:false, compliant:null, standard:'', exempt:false, note:'' };
+  if(!d) return res;
+  res.known = true;
+  res.date = d;
+
+  if(fuel.indexOf('ELECTRIC') > -1 || fuel.indexOf('HYDROGEN') > -1 || fuel.indexOf('FUEL CELL') > -1){
+    if(fuel.indexOf('PETROL') === -1 && fuel.indexOf('DIESEL') === -1 && fuel.indexOf('HYBRID') === -1){
+      res.compliant = true; res.exempt = true; res.standard = 'Zero emission';
+      res.note = 'Fully electric and hydrogen vehicles produce no tailpipe emissions, so they are not charged in any UK zone.';
+      return res;
+    }
+  }
+
+  var years = (Date.now() - d.getTime()) / 31557600000;
+  if(years >= 40){
+    res.compliant = true; res.exempt = true; res.historic = true; res.standard = 'Historic';
+    res.note = 'Vehicles built more than 40 years ago are exempt, but only once they are registered in the historic tax class. That sits on the V5C, not on the MOT record, so confirm it before relying on it.';
+    return res;
+  }
+
+  var threshold, label, plain;
+  if(bike){
+    threshold = Date.UTC(2007, 6, 1); label = 'Euro 3';
+    plain = 'Motorcycles and mopeds need to meet Euro 3, which generally means first registered from around July 2007.';
+  } else if(fuel.indexOf('DIESEL') > -1 || fuel.indexOf('HEAVY OIL') > -1){
+    threshold = Date.UTC(2015, 8, 1); label = 'Euro 6';
+    plain = 'Diesel cars need to meet Euro 6, which generally means first registered from 1 September 2015. Diesel vans are usually September 2016.';
+  } else {
+    threshold = Date.UTC(2006, 0, 1); label = 'Euro 4';
+    plain = 'Petrol cars need to meet Euro 4, which generally means first registered from January 2006.';
+  }
+  res.standard = label;
+  res.note = plain;
+  res.compliant = d.getTime() >= threshold;
+  return res;
+}
+
+function ulezHtml(v, a){
+  var u = ulezCheck(v, a.bike);
+  if(!u.known){
+    return '<h3>ULEZ and Clean Air Zone</h3><p class="meta">There is no first registration date on the DVSA record for this vehicle, so we cannot estimate its emissions zone status.</p>';
+  }
+  var ok = u.compliant;
+  var cls = ok ? 'ok' : 'bad';
+  var word = u.exempt ? 'Exempt' : (ok ? 'Likely compliant' : 'Likely NOT compliant');
+  var h = '<h3>ULEZ and Clean Air Zone estimate</h3>';
+  h += '<div class="flag"><span class="dot ' + (ok ? 'd-green' : 'd-red') + '"></span><div>'
+     + '<strong style="font-size:19px" class="v ' + cls + '">' + word + '</strong>'
+     + '<p class="meta">' + esc(u.note) + '</p>'
+     + '<p class="meta">This vehicle was first used ' + fmt(u.date) + ' and is recorded as ' + esc(String(v.fuelType || 'unknown fuel').toLowerCase()) + '.</p>'
+     + '</div></div>';
+
+  if(!ok){
+    h += '<p class="meta">If that is right, here is what it costs to drive into each charging zone.</p>';
+    h += '<table><thead><tr><th>Zone</th><th>Daily charge for a non compliant car</th></tr></thead><tbody>';
+    h += '<tr><td><strong>London ULEZ</strong>, all 32 boroughs</td><td><strong>&pound;12.50</strong>, every day of the year including weekends</td></tr>';
+    h += '<tr><td>Birmingham Clean Air Zone</td><td>&pound;8</td></tr>';
+    h += '<tr><td>Bristol Clean Air Zone</td><td>&pound;9</td></tr>';
+    h += '<tr><td>Bath, Sheffield, Bradford, Portsmouth, Tyneside</td><td>No charge for private cars</td></tr>';
+    h += '<tr><td>Glasgow, Edinburgh, Aberdeen, Dundee</td><td>You cannot pay. Non compliant vehicles are banned, and the penalty starts at &pound;60</td></tr>';
+    h += '</tbody></table>';
+    h += '<p class="meta"><strong>Commuting into London five days a week at &pound;12.50 a day is roughly &pound;3,000 a year.</strong> That is worth knowing before you buy, and it is worth negotiating with.</p>';
+  } else if(!u.exempt){
+    h += '<p class="meta">On this estimate you would not pay the &pound;12.50 London ULEZ charge, the &pound;8 Birmingham charge or the &pound;9 Bristol charge, and you would not be turned away from the Scottish low emission zones.</p>';
+  }
+
+  h += '<p class="meta" style="border-top:1px solid var(--line);padding-top:10px;margin-top:12px">'
+     + '<strong>This is an estimate, not the official answer.</strong> We work it out from the fuel type and first registration date in the DVSA record, because the actual Euro standard is not published in that dataset. '
+     + 'Registration date is a good guide, but the real standard varies by make, model and engine, and some vehicles met the standard early. '
+     + 'Before you rely on it, check the free official checker at '
+     + '<a href="https://tfl.gov.uk/modes/driving/check-your-vehicle/" rel="noopener" target="_blank">TfL</a>, which reads the actual vehicle record.</p>';
+  return h;
+}
+
 function flagsOf(a, v){
   var f = [];
   if(a.back.length){
@@ -218,6 +298,7 @@ function reportHtml(v, a){
     h += '<div class="flag"><span class="dot d-' + f.c + '"></span><div><strong>' + esc(f.t) + '</strong><p class="meta">' + esc(f.d) + '</p></div></div>';
   });
   h += chart(a.pts);
+  h += ulezHtml(v, a);
   h += '<div class="actions noprint">'
      + '<button type="button" class="btn ghost js-share" data-reg="' + esc(reg) + '">Share this check</button>'
      + '<button type="button" class="btn ghost js-print">Print or save as PDF</button>'
