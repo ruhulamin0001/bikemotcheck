@@ -13,9 +13,28 @@ function cm(n){ return String(n).replace(/(.)(?=(...)+$)/g,'$1,'); }
 function cleanReg(s){ return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12); }
 function plate(r){ return '<span class="miniplate"><span class="gb">GB</span><span class="no">'+esc(r)+'</span></span>'; }
 
-var BIKES = ['honda','yamaha','suzuki','kawasaki','ducati','ktm','triumph','harley-davidson','aprilia','piaggio','vespa','lexmoto','sinnis','royal enfield','moto guzzi','husqvarna','benelli','keeway','zontes','mutt','herald','fantic','sym','kymco'];
-function isBike(v){ var m = String(v.make==null?'':v.make).toLowerCase();
-  if(BIKES.indexOf(m)===-1) return false; var e = num(v.engineSize); if(e==null) return true; return e<1400; }
+/* Bike detection. The DVSA dataset has no vehicle class, so this is a heuristic.
+   Rule: makes that ONLY sell motorcycles in the UK are treated as bikes outright.
+   Makes that sell both, such as Honda and Suzuki, need strong extra evidence,
+   because calling a car a motorcycle skews the mileage benchmark and the ULEZ standard.
+   When unsure we default to CAR, which is the far more common case. */
+var BIKE_ONLY = ['yamaha','kawasaki','ducati','ktm','triumph','harley-davidson','harley davidson',
+  'aprilia','piaggio','vespa','lexmoto','sinnis','royal enfield','moto guzzi','husqvarna','benelli',
+  'keeway','zontes','mutt','herald','fantic','sym','kymco','mv agusta','indian','norton','bullit',
+  'rieju','beta','gas gas','sherco','lambretta','niu','super soco'];
+var BIKE_MAYBE = ['honda','suzuki','bmw','peugeot','kawasaki motors'];
+function isBike(v){
+  var m = String(v.make == null ? '' : v.make).toLowerCase().trim();
+  if(BIKE_ONLY.indexOf(m) > -1) return true;
+  if(BIKE_MAYBE.indexOf(m) > -1){
+    var e = num(v.engineSize);
+    var fuel = String(v.fuelType == null ? '' : v.fuelType).toUpperCase();
+    /* a sub 900cc petrol from a maker that sells both is almost certainly a bike,
+       because essentially no UK car from these makers is under 900cc */
+    if(e != null && e < 900 && fuel.indexOf('PETROL') > -1) return true;
+  }
+  return false;
+}
 var UK_CAR = 7100, UK_BIKE = 3000, UK_PASS = 78.3;
 
 /* ---------- toast ---------- */
