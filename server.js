@@ -224,6 +224,17 @@ footer a{color:var(--blue)}
     <p><strong>Is the mileage guaranteed accurate?</strong> It is the reading the tester entered on the day. Testers occasionally mistype. A single odd figure between otherwise sensible readings is usually a typo, a permanent drop is not.</p>
   </section>
 </main>
+<section class='card' style='margin:26px 0'>
+<h2 style='margin-top:0'>MOT guides</h2>
+<p>Plain English, sourced from GOV.UK and DVSA. No hype, and we say plainly when something does not matter.</p>
+<ul>
+<li><a href='/guides/what-fails-an-mot-uk'>What actually fails an MOT, and what it costs to put right</a></li>
+<li><a href='/guides/spot-a-clocked-car-uk'>How to spot a clocked car before you hand over the money</a></li>
+<li><a href='/guides/mot-rules-fines-uk'>MOT rules in plain English: when it is due, and what you get fined</a></li>
+<li><a href='/guides/mot-defect-categories-uk'>Dangerous, major, minor and advisory: what your result means</a></li>
+</ul>
+<p><a href='/guides'>See all guides</a></p>
+</section>
 <footer class="wrap">
   <p><strong>Not affiliated with DVSA or GOV.UK.</strong> Data from the DVSA MOT History API under the <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" rel="noopener">Open Government Licence v3.0</a>. Confirm anything important on <a href="https://www.gov.uk/check-mot-history" rel="noopener">gov.uk</a> before you buy.</p>
   <p>No searches stored, no accounts, no tracking cookies. Built by Ruhul Amin.</p>
