@@ -527,6 +527,8 @@ const MANIFEST = JSON.stringify({
   icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }]
 });
 
+const INDEXNOW_KEY = '7c4f9a2be85d41d0ab63f1e770c9d284';
+
 const ROBOTS = [
   'User-agent: *', 'Allow: /', 'Disallow: /api/', 'Disallow: /calendar/', '',
   'Sitemap: ' + SITE + '/sitemap.xml',
@@ -561,6 +563,7 @@ http.createServer(function(req, res){
   var params = new URLSearchParams(query);
 
   if(path === '/healthz') return send(res, 200, 'application/json', JSON.stringify({ ok:true, cached:Object.keys(cache).length }), 'no-store');
+  if(path === '/' + INDEXNOW_KEY + '.txt') return send(res, 200, 'text/plain; charset=utf-8', INDEXNOW_KEY, 'public, max-age=86400');
   if(path === '/robots.txt') return send(res, 200, 'text/plain; charset=utf-8', ROBOTS, 'public, max-age=3600');
   if(path === '/sitemap.xml') return send(res, 200, 'application/xml; charset=utf-8', SITEMAP, 'public, max-age=3600');
   if(path === '/manifest.webmanifest') return send(res, 200, 'application/manifest+json', MANIFEST, 'public, max-age=86400');
@@ -597,6 +600,22 @@ http.createServer(function(req, res){
   if(path === '/compare') return send(res, 200, 'text/html; charset=utf-8', comparePage());
 
   if(path.indexOf('/check/') === 0){
+    var pre0 = cleanReg(decodeURIComponent(path.slice(7)));
+    if(!pre0) { res.writeHead(302, { Location:'/' }); return res.end(); }
+    /* These are share links for one specific vehicle. There are millions of possible
+       registrations and the served HTML is the same shell every time, so letting Google
+       index them would burn crawl budget on near duplicates and leave the pages that
+       matter uncrawled. Serve them, but keep them out of the index. */
+    var body0 = homePage(pre0).replace(
+      '<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">',
+      '<meta name="robots" content="noindex,follow">'
+    ).replace(
+      '<link rel="canonical" href="' + SITE + '/check/' + encodeURIComponent(pre0) + '">',
+      '<link rel="canonical" href="' + SITE + '/">'
+    );
+    return send(res, 200, 'text/html; charset=utf-8', body0);
+  }
+  if(false){
     var pre = cleanReg(decodeURIComponent(path.slice(7)));
     if(!pre) { res.writeHead(302, { Location:'/' }); return res.end(); }
     return send(res, 200, 'text/html; charset=utf-8', homePage(pre));
