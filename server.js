@@ -266,7 +266,23 @@ const CSS = [
 
 const ICON_URI = 'data:image/svg+xml,' + encodeURIComponent(ICON_SVG);
 
-function jsonLd(){
+/* FAQ structured data must match what the visitor can actually read on that page,
+   so each page passes its own list and pages with no FAQ pass nothing. */
+const MOT_FAQ = [
+  { q:'Is the MOT history check really free?', a:'Yes. No sign up, no payment and no limit for normal use. The data comes from the DVSA MOT History API, which is free to read. We pay for the server, not for the data.' },
+  { q:'How far back does the history go?', a:'DVSA records go back to 2005, including the odometer reading taken at each test.' },
+  { q:'Does it cover Northern Ireland?', a:'No. DVSA holds records for England, Scotland and Wales. Northern Ireland MOTs are run by the DVA and are not in this dataset.' },
+  { q:'Why does it say no record found?', a:'Usually because the vehicle is under three years old and has never needed a test, because the registration was typed incorrectly, or because it is a Northern Ireland or recently imported vehicle.' },
+  { q:'Do you store the registrations I look up?', a:'No. Lookups are cached in memory for a few hours so that repeated searches do not hit the DVSA quota, and that cache clears when the server restarts. Your recent searches are saved in your own browser only.' }
+];
+const ULEZ_FAQ = [
+  { q:'Is my petrol car ULEZ compliant?', a:'Almost certainly yes if it was first registered from 2006 onwards, and quite possibly yes if it is from 2003 to 2005, because many manufacturers met Euro 4 early. Check the registration to be sure.' },
+  { q:'Why is my diesel not compliant when it is only ten years old?', a:'Because diesels are held to Euro 6 rather than Euro 4, and Euro 6 only became compulsory for new cars in September 2015. A 2014 diesel is usually Euro 5 and does pay.' },
+  { q:'Does the ULEZ charge apply at weekends?', a:'Yes. It runs 24 hours a day, every day except Christmas Day.' },
+  { q:'Are electric cars exempt?', a:'Yes. Fully electric and hydrogen vehicles produce no tailpipe emissions and are not charged anywhere.' },
+  { q:'Is this the official checker?', a:'No. The DVSA MOT dataset does not publish the Euro standard, so we estimate it from fuel type and first registration date. For the definitive answer use the free official checker at TfL.' }
+];
+function jsonLd(faqList){
   var app = {
     '@context':'https://schema.org','@type':'WebApplication',
     name:'Bike MOT Check UK', url:SITE, applicationCategory:'UtilitiesApplication',
@@ -277,17 +293,17 @@ function jsonLd(){
   var org = { '@context':'https://schema.org','@type':'Organization', name:'Bike MOT Check UK', url:SITE, logo:SITE + '/icon.svg', founder:{'@type':'Person',name:'Ruhul Amin'} };
   var site = { '@context':'https://schema.org','@type':'WebSite', name:'Bike MOT Check UK', url:SITE,
     potentialAction:{'@type':'SearchAction',target:{'@type':'EntryPoint',urlTemplate:SITE + '/check/{search_term_string}'},'query-input':'required name=search_term_string'} };
-  var faq = { '@context':'https://schema.org','@type':'FAQPage','mainEntity':[
-      {'@type':'Question',name:'Is the MOT history check really free?',acceptedAnswer:{'@type':'Answer',text:'Yes. There is no sign up, no payment and no limit for normal use. The data comes from the DVSA MOT History API, which is free to read.'}},
-      {'@type':'Question',name:'How far back does the MOT history go?',acceptedAnswer:{'@type':'Answer',text:'DVSA records go back to 2005, including the odometer reading taken at each test.'}},
-      {'@type':'Question',name:'Does it cover Northern Ireland?',acceptedAnswer:{'@type':'Answer',text:'No. DVSA holds records for England, Scotland and Wales. Northern Ireland MOTs are run by the DVA and are not in this dataset.'}},
-      {'@type':'Question',name:'Can I tell if a car has been clocked?',acceptedAnswer:{'@type':'Answer',text:'Often, yes. Every MOT records the mileage, so a reading that drops between tests is visible immediately. This checker flags any drop automatically, though a replaced instrument cluster can cause the same pattern innocently.'}},
-      {'@type':'Question',name:'What does the MOT not tell me?',acceptedAnswer:{'@type':'Answer',text:'It says nothing about the clutch, gearbox, engine internals, air conditioning or outstanding finance. It is a roadworthiness snapshot on the day of the test, not a mechanical warranty.'}}
-  ]};
-  return [app,org,site,faq].map(function(o){ return '<script type="application/ld+json">' + JSON.stringify(o) + '<' + '/script>'; }).join('');
+  var out = [app, org, site];
+  if(faqList && faqList.length){
+    out.push({ '@context':'https://schema.org','@type':'FAQPage','mainEntity': faqList.map(function(f){
+      return { '@type':'Question', name:f.q, acceptedAnswer:{ '@type':'Answer', text:f.a } };
+    }) });
+  }
+  return out.map(function(o){
+ return '<script type="application/ld+json">' + JSON.stringify(o) + '<' + '/script>'; }).join('');
 }
 
-function head(title, desc, canon){
+function head(title, desc, canon, faqList){
   return [
   '<!doctype html><html lang="en-GB"><head><meta charset="utf-8">',
   '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">',
@@ -314,7 +330,7 @@ function head(title, desc, canon){
   '<meta name="twitter:title" content="' + esc(title) + '">',
   '<meta name="twitter:description" content="' + esc(desc) + '">',
   '<meta name="twitter:image" content="' + SITE + '/og.png">',
-  jsonLd(),
+  jsonLd(faqList),
   '<style>' + CSS + '</style>',
   '</head><body>',
   '<div class="mesh" aria-hidden="true"><i></i><i></i><i></i></div>',
@@ -355,7 +371,7 @@ function ulezPage(){
   return [
   head('ULEZ Check: Is My Car ULEZ Compliant? Free Registration Check',
        'Free ULEZ and Clean Air Zone check for any UK registration. See whether a vehicle is likely to pay the London ULEZ charge, and what Birmingham, Bristol and the Scottish low emission zones cost.',
-       SITE + '/ulez'),
+       SITE + '/ulez', ULEZ_FAQ),
   '<main class="wrap">',
   '<section class="hero">',
   '<h1>Is my car <span class="grad">ULEZ compliant?</span></h1>',
@@ -417,7 +433,7 @@ function homePage(prefill){
   head(prefill ? (prefill + ' MOT history, mileage and failures | Bike MOT Check UK')
                : 'Free MOT History Check UK - Mileage, Failures and Buyer Report',
        'Free MOT history check for any UK registration. Every test, every mileage reading and every advisory since 2005, plus an automatic buyer report that flags mileage rollbacks and recurring faults.',
-       prefill ? (SITE + '/check/' + encodeURIComponent(prefill)) : (SITE + '/')),
+       prefill ? (SITE + '/check/' + encodeURIComponent(prefill)) : (SITE + '/'), MOT_FAQ),
   '<main class="wrap">',
   '<section class="hero">',
   '<h1>Check any UK vehicle&rsquo;s<br><span class="grad">MOT history, free</span></h1>',
@@ -471,7 +487,7 @@ function comparePage(){
   return [
   head('Compare Two Vehicles Side by Side | Bike MOT Check UK',
        'Put two UK registrations side by side and compare MOT pass rate, average annual mileage, dangerous defects and recurring faults before you choose which one to buy.',
-       SITE + '/compare'),
+       SITE + '/compare', null),
   '<main class="wrap">',
   '<section class="hero" style="padding-top:44px">',
   '<h1>Compare <span class="grad">two vehicles</span></h1>',
