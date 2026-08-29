@@ -110,7 +110,7 @@ function buildIcs(reg, dateStr, vehicle){
   var end = new Date(d.getTime() + 86400000);
   var title = 'MOT due: ' + reg + (vehicle ? ' (' + vehicle + ')' : '');
   return [
-    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Bike MOT Check UK//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MOT Check UK//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH',
     'BEGIN:VEVENT',
     'UID:' + reg + '-' + icsDate(d) + '@bikemotcheckuk.cloud',
     'DTSTAMP:' + icsStamp(new Date()),
@@ -285,13 +285,13 @@ const ULEZ_FAQ = [
 function jsonLd(faqList){
   var app = {
     '@context':'https://schema.org','@type':'WebApplication',
-    name:'Bike MOT Check UK', url:SITE, applicationCategory:'UtilitiesApplication',
+    name:'MOT Check UK', url:SITE, applicationCategory:'UtilitiesApplication',
     operatingSystem:'Any', browserRequirements:'Requires JavaScript',
     description:'Free MOT history check for any UK registration. Full test history, mileage chart and an automatic buyer report built from DVSA data.',
     offers:{'@type':'Offer',price:'0',priceCurrency:'GBP'}, inLanguage:'en-GB'
   };
-  var org = { '@context':'https://schema.org','@type':'Organization', name:'Bike MOT Check UK', url:SITE, logo:SITE + '/icon.svg', founder:{'@type':'Person',name:'Ruhul Amin'} };
-  var site = { '@context':'https://schema.org','@type':'WebSite', name:'Bike MOT Check UK', url:SITE,
+  var org = { '@context':'https://schema.org','@type':'Organization', name:'MOT Check UK', url:SITE, logo:SITE + '/icon.svg', founder:{'@type':'Person',name:'Ruhul Amin'} };
+  var site = { '@context':'https://schema.org','@type':'WebSite', name:'MOT Check UK', url:SITE,
     potentialAction:{'@type':'SearchAction',target:{'@type':'EntryPoint',urlTemplate:SITE + '/check/{search_term_string}'},'query-input':'required name=search_term_string'} };
   var out = [app, org, site];
   if(faqList && faqList.length){
@@ -318,7 +318,7 @@ function head(title, desc, canon, faqList){
   '<link rel="apple-touch-icon" href="/icon.svg">',
   '<link rel="manifest" href="/manifest.webmanifest">',
   '<meta property="og:type" content="website">',
-  '<meta property="og:site_name" content="Bike MOT Check UK">',
+  '<meta property="og:site_name" content="MOT Check UK">',
   '<meta property="og:locale" content="en_GB">',
   '<meta property="og:title" content="' + esc(title) + '">',
   '<meta property="og:description" content="' + esc(desc) + '">',
@@ -335,7 +335,7 @@ function head(title, desc, canon, faqList){
   '</head><body>',
   '<div class="mesh" aria-hidden="true"><i></i><i></i><i></i></div>',
   '<header class="site"><div class="wrap">',
-  '<a class="brand" href="/">' + ICON_SVG + '<span>Bike MOT Check<span style="color:var(--mut);font-weight:600"> UK</span></span></a>',
+  '<a class="brand" href="/">' + ICON_SVG + '<span>MOT Check<span style="color:var(--mut);font-weight:600"> UK</span></span></a>',
   '<nav class="nav"><a href="/ulez">ULEZ</a><a href="/guides">Guides</a><a href="/compare">Compare</a></nav>',
   '</div></header>'
   ].join('');
@@ -344,7 +344,7 @@ function head(title, desc, canon, faqList){
 function footer(){
   return [
   '<footer><div class="wrap">',
-  '<p><strong>Bike MOT Check UK</strong> reads the official DVSA MOT History API. It is free, needs no account, and we do not store the registrations you look up.</p>',
+  '<p><strong>MOT Check UK</strong> reads the official DVSA MOT History API. It is free, needs no account, and we do not store the registrations you look up.</p>',
   '<p>Data covers England, Scotland and Wales. Northern Ireland MOTs are administered by the DVA and are not included. An MOT is a roadworthiness snapshot on the day of the test, not a mechanical warranty, and this site is general information rather than advice on any individual purchase.</p>',
   '<p><a href="/guides">MOT guides</a> &middot; <a href="/compare">Compare two vehicles</a> &middot; <a href="/">Run a check</a></p>',
   '<p>Something wrong, out of date, or a vehicle we got wrong? Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> and a person will read it.</p>',
@@ -430,14 +430,14 @@ function ulezPage(){
 }
 function homePage(prefill){
   return [
-  head(prefill ? (prefill + ' MOT history, mileage and failures | Bike MOT Check UK')
-               : 'Free MOT History Check UK - Mileage, Failures and Buyer Report',
-       'Free MOT history check for any UK registration. Every test, every mileage reading and every advisory since 2005, plus an automatic buyer report that flags mileage rollbacks and recurring faults.',
+  head(prefill ? (prefill + ' MOT history, mileage and failures | MOT Check UK')
+               : 'Free MOT History Check: Cars, Vans, Motorcycles and Lorries',
+       'Free MOT history check for any UK car, van, motorcycle, lorry or trailer. Every test, every mileage reading and every advisory since 2005, plus a buyer report that flags mileage rollbacks and recurring faults.',
        prefill ? (SITE + '/check/' + encodeURIComponent(prefill)) : (SITE + '/'), MOT_FAQ),
   '<main class="wrap">',
   '<section class="hero">',
   '<h1>Check any UK vehicle&rsquo;s<br><span class="grad">MOT history, free</span></h1>',
-  '<p class="sub">Every test, every mileage reading and every advisory since 2005. Cars, vans, motorcycles, HGVs and trailers. You also get an automatic buyer report that flags the things worth arguing about.</p>',
+  '<p class="sub">Every test, every mileage reading and every advisory since 2005. Works for cars, vans, motorcycles, lorries (HGVs) and trailers. You also get an automatic buyer report that flags the things worth arguing about.</p>',
   searchBlock(prefill),
   '<div class="trust"><span>Official DVSA data</span><span>No sign up</span><span>No payment</span><span>Records since 2005</span><span>Nothing stored</span></div>',
   '</section>',
@@ -485,7 +485,7 @@ function homePage(prefill){
 
 function comparePage(){
   return [
-  head('Compare Two Vehicles Side by Side | Bike MOT Check UK',
+  head('Compare Two Vehicles Side by Side | MOT Check UK',
        'Put two UK registrations side by side and compare MOT pass rate, average annual mileage, dangerous defects and recurring faults before you choose which one to buy.',
        SITE + '/compare', null),
   '<main class="wrap">',
@@ -544,7 +544,7 @@ try {
 } catch(e) {}
 
 const MANIFEST = JSON.stringify({
-  name: 'Bike MOT Check UK', short_name: 'MOT Check',
+  name: 'MOT Check UK', short_name: 'MOT Check',
   description: 'Free MOT history check for any UK registration.',
   start_url: '/', display: 'standalone', background_color: '#f6f7fb', theme_color: '#6366f1',
   icons: [{ src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }]
