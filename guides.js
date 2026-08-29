@@ -1,40 +1,53 @@
 /* Remote guides. A new guide goes live with ONE commit to guides-data.json,
    with no container rebuild. Falls back to the built-in guides if anything fails. */
 var _https = require('https');
+var _zlib = require('zlib');
 var REMOTE = [];
 var REMOTE_URL = 'https://raw.githubusercontent.com/ruhulamin0001/bikemotcheck/main/guides-data.json';
 function allGuides(){ try { return REMOTE.concat(BUILTIN); } catch(e){ return []; } }
+function applyRemote(text){
+  try {
+    var arr = JSON.parse(text);
+    if (!Array.isArray(arr)) { console.log('remote guides: not an array'); return; }
+    var builtin = BUILTIN.map(function(x){ return x.slug; });
+    var seen = {};
+    var out = [];
+    arr.forEach(function(x){
+      if (!x || typeof x.slug !== 'string' || typeof x.title !== 'string' || typeof x.body !== 'string') return;
+      if (!/^[a-z0-9-]{3,80}$/.test(x.slug)) return;
+      if (builtin.indexOf(x.slug) > -1) return;
+      if (seen[x.slug]) return;
+      seen[x.slug] = 1;
+      out.push({ slug: x.slug, title: x.title, desc: String(x.desc || ''), date: String(x.date || ''), mins: Number(x.mins) || 6, body: x.body });
+    });
+    REMOTE = out;
+    console.log('remote guides loaded: ' + REMOTE.length);
+  } catch(e) { console.log('remote guides parse failed: ' + e.message); }
+}
 function loadRemoteGuides(){
   try {
-    _https.get(REMOTE_URL, { headers: { 'User-Agent': 'motcheck-guides' } }, function(res){
-      if (res.statusCode !== 200) { res.resume(); return; }
-      var body = '';
-      res.setEncoding('utf8');
-      res.on('data', function(c){ body += c; if (body.length > 5000000) res.destroy(); });
+    var opts = { headers: { 'User-Agent': 'motcheck-guides', 'Accept-Encoding': 'identity', 'Cache-Control': 'no-cache' } };
+    _https.get(REMOTE_URL, opts, function(res){
+      if (res.statusCode !== 200) { console.log('remote guides http ' + res.statusCode); res.resume(); return; }
+      var enc = String(res.headers['content-encoding'] || '').toLowerCase();
+      var chunks = [];
+      var total = 0;
+      res.on('data', function(c){ total += c.length; if (total > 8000000) { res.destroy(); return; } chunks.push(c); });
       res.on('end', function(){
+        var buf = Buffer.concat(chunks);
         try {
-          var arr = JSON.parse(body);
-          if (!Array.isArray(arr)) return;
-          var builtin = BUILTIN.map(function(x){ return x.slug; });
-          var seen = {};
-          var out = [];
-          arr.forEach(function(x){
-            if (!x || typeof x.slug !== 'string' || typeof x.title !== 'string' || typeof x.body !== 'string') return;
-            if (!/^[a-z0-9-]{3,80}$/.test(x.slug)) return;
-            if (builtin.indexOf(x.slug) > -1) return;
-            if (seen[x.slug]) return;
-            seen[x.slug] = 1;
-            out.push({ slug: x.slug, title: x.title, desc: String(x.desc || ''), date: String(x.date || ''), mins: Number(x.mins) || 6, body: x.body });
-          });
-          REMOTE = out;
-          console.log('remote guides loaded: ' + REMOTE.length);
-        } catch(e) { console.log('remote guides parse failed'); }
+          if (enc === 'gzip') { buf = _zlib.gunzipSync(buf); }
+          else if (enc === 'deflate') { buf = _zlib.inflateSync(buf); }
+          else if (enc === 'br') { buf = _zlib.brotliDecompressSync(buf); }
+        } catch(e) { console.log('remote guides decompress failed: ' + e.message); return; }
+        applyRemote(buf.toString('utf8'));
       });
-    }).on('error', function(){ console.log('remote guides fetch failed'); });
-  } catch(e) {}
+    }).on('error', function(e){ console.log('remote guides fetch failed: ' + e.message); });
+  } catch(e) { console.log('remote guides outer failed: ' + e.message); }
 }
 loadRemoteGuides();
 setInterval(loadRemoteGuides, 300000);
+
 
 const http = require('http');
 const PORT = process.env.PORT || 8080;
