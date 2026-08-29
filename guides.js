@@ -244,7 +244,7 @@ const BUILTIN = [
 }
 ];
 
-allGuides().push({
+BUILTIN.push({
  slug: 'mot-rules-fines-uk',
  title: 'MOT Rules in Plain English: When It Is Due, What It Costs, What You Get Fined',
  desc: 'The three year rule, the one month early rule, the £1,000 fine, and the handful of exemptions that actually apply. Sourced from GOV.UK.',
@@ -307,7 +307,7 @@ allGuides().push({
  ].join('')
 });
 
-allGuides().push({
+BUILTIN.push({
  slug: 'mot-defect-categories-uk',
  title: 'Dangerous, Major, Minor and Advisory: What Your MOT Result Actually Means',
  desc: 'The four MOT result categories, which ones fail you, which one means you must not drive the car at all, and how to read a defect list.',
@@ -361,7 +361,7 @@ allGuides().push({
  ].join('')
 });
 
-allGuides().push({
+BUILTIN.push({
  slug: 'mot-statistics-uk',
  title: 'UK MOT Statistics 2026: Pass Rates, Failure Reasons and Test Volumes',
  desc: 'Official DVSA MOT testing figures for Great Britain, laid out plainly. Test volumes, initial failure rates by class and by vehicle age, and the defect categories behind the failures.',
