@@ -1,3 +1,41 @@
+/* Remote guides. A new guide goes live with ONE commit to guides-data.json,
+   with no container rebuild. Falls back to the built-in guides if anything fails. */
+var _https = require('https');
+var REMOTE = [];
+var REMOTE_URL = 'https://raw.githubusercontent.com/ruhulamin0001/bikemotcheck/main/guides-data.json';
+function allGuides(){ try { return REMOTE.concat(BUILTIN); } catch(e){ return []; } }
+function loadRemoteGuides(){
+  try {
+    _https.get(REMOTE_URL, { headers: { 'User-Agent': 'motcheck-guides' } }, function(res){
+      if (res.statusCode !== 200) { res.resume(); return; }
+      var body = '';
+      res.setEncoding('utf8');
+      res.on('data', function(c){ body += c; if (body.length > 5000000) res.destroy(); });
+      res.on('end', function(){
+        try {
+          var arr = JSON.parse(body);
+          if (!Array.isArray(arr)) return;
+          var builtin = BUILTIN.map(function(x){ return x.slug; });
+          var seen = {};
+          var out = [];
+          arr.forEach(function(x){
+            if (!x || typeof x.slug !== 'string' || typeof x.title !== 'string' || typeof x.body !== 'string') return;
+            if (!/^[a-z0-9-]{3,80}$/.test(x.slug)) return;
+            if (builtin.indexOf(x.slug) > -1) return;
+            if (seen[x.slug]) return;
+            seen[x.slug] = 1;
+            out.push({ slug: x.slug, title: x.title, desc: String(x.desc || ''), date: String(x.date || ''), mins: Number(x.mins) || 6, body: x.body });
+          });
+          REMOTE = out;
+          console.log('remote guides loaded: ' + REMOTE.length);
+        } catch(e) { console.log('remote guides parse failed'); }
+      });
+    }).on('error', function(){ console.log('remote guides fetch failed'); });
+  } catch(e) {}
+}
+loadRemoteGuides();
+setInterval(loadRemoteGuides, 300000);
+
 const http = require('http');
 const PORT = process.env.PORT || 8080;
 const SITE = 'https://bikemotcheckuk.cloud';
@@ -45,7 +83,7 @@ const CSS = [
 const AUTHOR = "Written by Ruhul Amin, Hertfordshire. I built the free MOT history checker on this site. I am not a mechanic, so everything here is sourced from DVSA and GOV.UK rather than from opinion.";
 const DISCLAIM = "This guide is general information about the MOT test in England, Scotland and Wales. It is not legal advice and it is not a substitute for a qualified mechanic looking at your vehicle.";
 
-const GUIDES = [
+const BUILTIN = [
 {
  slug: 'what-fails-an-mot-uk',
  title: 'What Actually Fails an MOT in the UK, and What It Costs to Put Right',
@@ -206,7 +244,7 @@ const GUIDES = [
 }
 ];
 
-GUIDES.push({
+allGuides().push({
  slug: 'mot-rules-fines-uk',
  title: 'MOT Rules in Plain English: When It Is Due, What It Costs, What You Get Fined',
  desc: 'The three year rule, the one month early rule, the £1,000 fine, and the handful of exemptions that actually apply. Sourced from GOV.UK.',
@@ -269,7 +307,7 @@ GUIDES.push({
  ].join('')
 });
 
-GUIDES.push({
+allGuides().push({
  slug: 'mot-defect-categories-uk',
  title: 'Dangerous, Major, Minor and Advisory: What Your MOT Result Actually Means',
  desc: 'The four MOT result categories, which ones fail you, which one means you must not drive the car at all, and how to read a defect list.',
@@ -323,7 +361,7 @@ GUIDES.push({
  ].join('')
 });
 
-GUIDES.push({
+allGuides().push({
  slug: 'mot-statistics-uk',
  title: 'UK MOT Statistics 2026: Pass Rates, Failure Reasons and Test Volumes',
  desc: 'Official DVSA MOT testing figures for Great Britain, laid out plainly. Test volumes, initial failure rates by class and by vehicle age, and the defect categories behind the failures.',
@@ -423,7 +461,7 @@ function head(title, desc, canon, extra){
  "<link rel='canonical' href='" + canon + "'>",
  "<meta name='robots' content='index,follow,max-image-preview:large,max-snippet:-1'>",
  "<meta property='og:type' content='article'>",
- "<meta property='og:site_name' content='Bike MOT Check UK'>",
+ "<meta property='og:site_name' content='MOT Check UK'>",
  "<meta property='og:title' content='" + esc(title) + "'>",
  "<meta property='og:description' content='" + esc(desc) + "'>",
  "<meta property='og:url' content='" + canon + "'>",
@@ -433,7 +471,7 @@ function head(title, desc, canon, extra){
  "<style>" + CSS + "</style>",
  (extra || ""),
  "</head><body>",
- "<header class='site'><div class='wrap'><a class='brand' href='/'>Bike MOT Check UK</a><a class='cta' href='/'>Free MOT check</a></div></header>",
+ "<header class='site'><div class='wrap'><a class='brand' href='/'>MOT Check UK</a><a class='cta' href='/'>Free MOT check</a></div></header>",
  "<div class='wrap'>"
  ].join('');
 }
@@ -467,7 +505,7 @@ function foot(){
  ].join('');
 }
 function related(slug){
- var others = GUIDES.filter(function(g){ return g.slug !== slug; });
+ var others = allGuides().filter(function(g){ return g.slug !== slug; });
  var h = "<div class='card'><strong>More guides</strong>";
  others.forEach(function(g){ h += "<a class='gcard' href='/guides/" + g.slug + "'><h3>" + esc(g.title) + "</h3><p>" + esc(g.desc) + "</p></a>"; });
  return h + "</div>";
@@ -478,7 +516,7 @@ function articleJsonLd(g){
   "headline": g.title, "description": g.desc,
   "datePublished": g.date, "dateModified": g.date,
   "author": {"@type":"Person","name":"Ruhul Amin"},
-  "publisher": {"@type":"Organization","name":"Bike MOT Check UK","url":SITE},
+  "publisher": {"@type":"Organization","name":"MOT Check UK","url":SITE},
   "mainEntityOfPage": SITE + "/guides/" + g.slug,
   "inLanguage":"en-GB"
  };
@@ -494,7 +532,7 @@ function articleJsonLd(g){
 }
 function guidePage(g){
  return [
-  head(g.title + " | Bike MOT Check UK", g.desc, SITE + "/guides/" + g.slug, articleJsonLd(g)),
+  head(g.title + " | MOT Check UK", g.desc, SITE + "/guides/" + g.slug, articleJsonLd(g)),
   "<p class='meta'><a href='/'>Home</a> &rsaquo; <a href='/guides'>Guides</a></p>",
   "<h1>" + esc(g.title) + "</h1>",
   "<p class='meta'>By Ruhul Amin &middot; Published 21 August 2026 &middot; " + g.mins + " min read &middot; Figures checked August 2026</p>",
@@ -506,13 +544,13 @@ function guidePage(g){
  ].join('');
 }
 function indexPage(){
- var h = head("MOT Guides for UK Drivers and Buyers | Bike MOT Check UK",
+ var h = head("MOT Guides for UK Drivers and Buyers | MOT Check UK",
   "Plain English guides to the UK MOT: what fails, what the defect categories mean, the rules and fines, and how to spot a clocked car.",
   SITE + "/guides", "");
  h += "<p class='meta'><a href='/'>Home</a> &rsaquo; Guides</p>";
  h += "<h1>MOT guides</h1>";
  h += "<p class='stand'>Short, sourced guides to the things people actually get wrong about the MOT. Every figure comes from GOV.UK or DVSA, and every one says plainly when the answer is that it does not matter.</p>";
- GUIDES.forEach(function(g){
+ allGuides().forEach(function(g){
   h += "<a class='gcard' href='/guides/" + g.slug + "'><h3>" + esc(g.title) + "</h3><p>" + esc(g.desc) + "</p></a>";
  });
  h += "<div class='card'><strong>Looking up a specific vehicle?</strong><p class='meta'>The free checker reads the DVSA MOT history for any registration in England, Scotland or Wales, draws the mileage trail, and flags anything that looks off.</p><p><a class='cta' href='/'>Run a free MOT check</a></p></div>";
@@ -520,7 +558,7 @@ function indexPage(){
 }
 function sitemap(){
  var urls = ["<url><loc>" + SITE + "/guides</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>"];
- GUIDES.forEach(function(g){
+ allGuides().forEach(function(g){
   urls.push("<url><loc>" + SITE + "/guides/" + g.slug + "</loc><lastmod>" + g.date + "</lastmod><priority>0.9</priority><changefreq>monthly</changefreq></url>");
  });
  return "<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>" + urls.join('') + "</urlset>";
@@ -535,12 +573,12 @@ http.createServer(function(req, res){
  var p = q === -1 ? raw : raw.slice(0, q);
  if(p.length > 1 && p.charAt(p.length - 1) === '/') p = p.slice(0, -1);
  if(p === '/guides/sitemap.xml'){ return send(res, 200, 'application/xml; charset=utf-8', sitemap()); }
- if(p === '/guides/healthz'){ return send(res, 200, 'application/json', JSON.stringify({ok:true, guides:GUIDES.length})); }
+ if(p === '/guides/healthz'){ return send(res, 200, 'application/json', JSON.stringify({ok:true, guides:allGuides().length})); }
  if(p === '/guides' || p === '/guides/'){ return send(res, 200, 'text/html; charset=utf-8', indexPage()); }
  if(p.indexOf('/guides/') === 0){
   var slug = p.slice(8);
-  for(var i = 0; i < GUIDES.length; i++){
-   if(GUIDES[i].slug === slug){ return send(res, 200, 'text/html; charset=utf-8', guidePage(GUIDES[i])); }
+  for(var i = 0; i < allGuides().length; i++){
+   if(allGuides()[i].slug === slug){ return send(res, 200, 'text/html; charset=utf-8', guidePage(allGuides()[i])); }
   }
   res.writeHead(302, {'Location': '/guides'});
   return res.end();
