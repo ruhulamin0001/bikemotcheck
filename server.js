@@ -1,3 +1,45 @@
+/* EMO_MAIN_404: return a real 404 for unknown paths.
+   Before this, every unknown URL returned 200 with the homepage, which is a soft 404 and
+   Google treats it as thin duplicate content. The allowlist below was read directly out of
+   this file's own router (every path === comparison and every path.indexOf prefix) and then
+   verified against the live site, so it cannot silently drop a real route. */
+(function(){
+  var _h = require('http');
+  if (_h.__emoMain404) { return; }
+  _h.__emoMain404 = true;
+  var EXACT = {
+    '/': 1, '/healthz': 1, '/robots.txt': 1, '/sitemap.xml': 1, '/manifest.webmanifest': 1,
+    '/icon.svg': 1, '/favicon.svg': 1, '/favicon.ico': 1, '/og.png': 1, '/og.svg': 1,
+    '/apple-touch-icon.png': 1, '/app.js': 1, '/api/mot': 1, '/ulez': 1, '/compare': 1,
+    '/check': 1, '/calendar': 1
+  };
+  var PREFIX = ['/check/', '/calendar/', '/guides'];
+  var PAGE = "<!doctype html><html lang=\"en-GB\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>Page not found | MOT Check UK</title><meta name=\"robots\" content=\"noindex, follow\"><style>body{font:16px/1.65 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;padding:56px 20px;color:#14201b;background:#f7f9f8}.w{max-width:640px;margin:0 auto}h1{font-size:28px;margin:0 0 12px}ul{padding-left:20px}a{color:#0a8f5b}</style></head><body><div class=\"w\"><h1>Page not found</h1><p>That page does not exist on this site.</p><ul><li><a href=\"/\">Free MOT history check for any UK car, van, motorcycle or lorry</a></li><li><a href=\"/ulez\">ULEZ and clean air zone checker</a></li><li><a href=\"/compare\">Compare two vehicles</a></li><li><a href=\"/guides\">MOT guides</a></li></ul></div></body></html>";
+  var _orig = _h.createServer;
+  _h.createServer = function(handler){
+    var wrapped = function(req, res){
+      try {
+        var p = String(req.url || '').split('?')[0].split('#')[0];
+        var known = false;
+        for (var i = 0; i < PREFIX.length; i++) { if (p.indexOf(PREFIX[i]) === 0) { known = true; break; } }
+        if (!known && /^\/[0-9a-f]{32}\.txt$/.test(p)) { known = true; }
+        if (!known) {
+          var n = p.length > 1 ? p.replace(/\/+$/, '') : p;
+          if (n === '') { n = '/'; }
+          if (EXACT[n]) { known = true; }
+        }
+        if (!known) {
+          res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+          res.end(PAGE);
+          return;
+        }
+      } catch(e) {}
+      return handler(req, res);
+    };
+    return _orig.call(_h, wrapped);
+  };
+})();
+
 const http = require('http');
 const https = require('https');
 
