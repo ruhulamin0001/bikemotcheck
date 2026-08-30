@@ -372,7 +372,7 @@ function render(v, reg){
   var a = analyse(v);
   var r = String(v.registration||reg||'').toUpperCase();
   var name = (String(v.make||'') + ' ' + String(v.model||'')).trim();
-  document.title = r + ' MOT history, mileage and failures | Bike MOT Check UK';
+  document.title = r + ' MOT history, mileage and failures | MOT Check UK';
   out.innerHTML = reportHtml(v, a);
   pushRecent(r, name);
   try{ history.replaceState({}, '', '/check/' + encodeURIComponent(r)); }catch(e){}
