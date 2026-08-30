@@ -48,6 +48,40 @@ function loadRemoteGuides(){
 loadRemoteGuides();
 setInterval(loadRemoteGuides, 300000);
 
+/* EMO_GUIDES_404: return a real 404 for an unknown guide slug.
+   Previously every /guides/anything URL returned 200 with the index page, which is a soft 404.
+   Google treats that as thin duplicate content, and it also hid a real bug once. */
+(function(){
+  var _h = require('http');
+  if (_h.__emo404) { return; }
+  _h.__emo404 = true;
+  var _orig = _h.createServer;
+  var NOTFOUND = '<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Guide not found | MOT Check UK</title><meta name="robots" content="noindex, follow"><style>body{font:16px/1.6 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;padding:48px 20px;color:#14201b;background:#f7f9f8}.w{max-width:640px;margin:0 auto}a{color:#0a8f5b}</style></head><body><div class="w"><h1>Guide not found</h1><p>That guide does not exist. It may have been renamed or removed.</p><p><a href="/guides">See all MOT guides</a> or <a href="/">check a vehicle MOT history for free</a>.</p></div></body></html>';
+  _h.createServer = function(handler){
+    var wrapped = function(req, res){
+      try {
+        var u = String(req.url || '').split('?')[0];
+        if (u.indexOf('/guides/') === 0) {
+          var slug = u.slice(8).replace(/\/+$/, '');
+          if (slug && slug.indexOf('sitemap') !== 0) {
+            var list = allGuides();
+            var found = false;
+            for (var i = 0; i < list.length; i++) { if (list[i] && list[i].slug === slug) { found = true; break; } }
+            if (!found) {
+              res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+              res.end(NOTFOUND);
+              return;
+            }
+          }
+        }
+      } catch(e) {}
+      return handler(req, res);
+    };
+    return _orig.call(_h, wrapped);
+  };
+})();
+
+
 
 const http = require('http');
 const PORT = process.env.PORT || 8080;
