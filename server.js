@@ -11,7 +11,7 @@
     '/': 1, '/healthz': 1, '/robots.txt': 1, '/sitemap.xml': 1, '/manifest.webmanifest': 1,
     '/icon.svg': 1, '/favicon.svg': 1, '/favicon.ico': 1, '/og.png': 1, '/og.svg': 1,
     '/apple-touch-icon.png': 1, '/app.js': 1, '/api/mot': 1, '/ulez': 1, '/compare': 1,
-    '/scorecard': 1, '/trade': 1,
+    '/scorecard': 1, '/trade': 1, '/reminders': 1,
     '/check': 1, '/calendar': 1
   };
   var PREFIX = ['/check/', '/calendar/', '/guides'];
@@ -395,7 +395,7 @@ function head(title, desc, canon, faqList){
   '<div class="mesh" aria-hidden="true"><i></i><i></i><i></i></div>',
   '<header class="site"><div class="wrap">',
   '<a class="brand" href="/">' + ICON_SVG + '<span>MOT Check<span style="color:var(--mut);font-weight:600"> UK</span></span></a>',
-  '<nav class="nav"><a href="/ulez">ULEZ</a><a href="/guides">Guides</a><a href="/compare">Compare</a></nav>',
+  '<nav class="nav"><a href="/ulez">ULEZ</a><a href="/guides">Guides</a><a href="/compare">Compare</a><a href="/reminders">Reminders</a></nav>',
   '</div></header>'
   ].join('');
 }
@@ -405,7 +405,7 @@ function footer(){
   '<footer><div class="wrap">',
   '<p><strong>MOT Check UK</strong> reads the official DVSA MOT History API. It is free, needs no account, and we do not store the registrations you look up.</p>',
   '<p>Data covers England, Scotland and Wales. Northern Ireland MOTs are administered by the DVA and are not included. An MOT is a roadworthiness snapshot on the day of the test, not a mechanical warranty, and this site is general information rather than advice on any individual purchase.</p>',
-  '<p><a href="/guides">MOT guides</a> &middot; <a href="/compare">Compare two vehicles</a> &middot; <a href="/">Run a check</a></p>',
+  '<p><a href="/guides">MOT guides</a> &middot; <a href="/compare">Compare two vehicles</a> &middot; <a href="/reminders">MOT reminders</a> &middot; <a href="/">Run a check</a></p>',
   '<p>Something wrong, out of date, or a vehicle we got wrong? Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> and a person will read it.</p>',
   '<p class="meta">Built by Ruhul Amin, Hertfordshire. Figures checked August 2026.</p>',
   '</div></footer></body></html>'
@@ -429,7 +429,7 @@ function searchBlock(prefill){
 function ulezPage(){
   return [
   head('ULEZ Check: Is My Car ULEZ Compliant? Free Registration Check',
-       'Free ULEZ and Clean Air Zone check for any UK registration. See whether a vehicle is likely to pay the London ULEZ charge, and what Birmingham, Bristol and the Scottish low emission zones cost.',
+       'Free ULEZ and Clean Air Zone check for any UK registration. See if a vehicle is likely to pay the London ULEZ charge, plus Birmingham, Bristol and Scotland.',
        SITE + '/ulez', ULEZ_FAQ),
   '<main class="wrap">',
   '<section class="hero">',
@@ -491,7 +491,7 @@ function homePage(prefill){
   return [
   head(prefill ? (prefill + ' MOT history, mileage and failures | MOT Check UK')
                : 'Free MOT History Check: Cars, Vans, Motorcycles and Lorries',
-       'Free MOT history check for any UK car, van, motorcycle, lorry or trailer. Every test, every mileage reading and every advisory since 2005, plus a buyer report that flags mileage rollbacks and recurring faults.',
+       'Free MOT history check for any UK car, van, motorcycle or lorry. Every test, mileage reading and advisory since 2005, plus an automatic buyer report.',
        prefill ? (SITE + '/check/' + encodeURIComponent(prefill)) : (SITE + '/'), MOT_FAQ),
   '<main class="wrap">',
   '<section class="hero">',
@@ -575,12 +575,59 @@ function comparePage(){
   ].join('');
 }
 
+/* ---- Roadmap item 1: MOT reminder landing page. The .ics machinery (buildIcs and
+   /calendar/<REG>.ics with alarms at 21 and 7 days) already existed; this page fronts it.
+   Tax reminders need the DVLA Vehicle Enquiry Service API and its own key — not registered
+   yet, so tax is deliberately absent. Hook: add tax expiry here once a VES key exists. ---- */
+function remindersPage(prefill){
+  var faq = [
+    { q:'When is my MOT due?',
+      a:'Enter the registration above. We read the official DVSA record and show the exact expiry date, with a countdown of the days left.' },
+    { q:'How early can I book the test?',
+      a:'Up to one month minus a day before the expiry date. Book inside that window and the new certificate keeps the old renewal date, so you lose nothing by testing early.' },
+    { q:'How does the calendar reminder work?',
+      a:'One click downloads a small calendar file with the MOT due date and two built-in alerts, 21 days and 7 days before. It works with Google Calendar, Apple Calendar and Outlook. No email, no account, and we keep no copy.' },
+    { q:'What happens if my MOT runs out?',
+      a:'You can only drive the vehicle to a pre-booked test or to a repair appointment. Driving otherwise risks a fine of up to £1,000, and up to £2,500 if the vehicle is judged dangerous.' }
+  ];
+  return [
+  head('Free MOT Reminder: Check Your Due Date, Get Alerts',
+       'Check the exact MOT due date for any UK car, van, motorcycle or lorry, then add it to your calendar with alerts 21 and 7 days before. Free, no account.',
+       SITE + '/reminders', faq),
+  '<main class="wrap">',
+  '<section class="hero" style="padding-top:44px">',
+  '<h1>Never miss <span class="grad">an MOT again</span></h1>',
+  '<p class="sub">Enter a registration and we show the exact due date from the official DVSA record, with one click to put it in your calendar with alerts 21 and 7 days before. No email, no account, nothing stored.</p>',
+  searchBlock(prefill),
+  '<div class="trust"><span>Official DVSA data</span><span>Works with Google, Apple and Outlook</span><span>No email needed</span><span>Free</span></div>',
+  '</section>',
+  '<div id="out"></div>',
+  '<section>',
+  '<h2>How this works</h2>',
+  '<ol>',
+  '<li>Run the check. The result shows the MOT expiry date and how many days are left.</li>',
+  '<li>Click <strong>Add reminder to calendar</strong> on the result. Your phone or computer saves the due date with alerts 21 days and 7 days before.</li>',
+  '<li>Book the test up to a month minus a day early. Do that and the new certificate keeps your old renewal date, so early testing costs you nothing.</li>',
+  '</ol>',
+  '<p>The reminder lives in your own calendar, not on our server. We do not take your email address and we do not store the registration. That is the whole point: a reminder service with nothing to sign up for.</p>',
+  '<h2>Why the two alerts are set where they are</h2>',
+  '<p>The 21 day alert lands inside the early-booking window, so you can book at a convenient garage rather than whoever has a slot left. The 7 day alert is the backstop. About <a href="/guides/what-fails-an-mot-uk">one car in four fails its first attempt</a>, and a failed test with days in hand is an inconvenience rather than a crisis.</p>',
+  '<h2>Frequently asked</h2>',
+  faq.map(function(f){ return '<h3>' + esc(f.q) + '</h3><p>' + esc(f.a) + '</p>'; }).join(''),
+  '<p>The rules and fines around due dates are covered properly in <a href="/guides/mot-rules-fines-uk">MOT rules in plain English</a>, and <a href="/guides/mot-cost-uk">the legal maximum test fee</a> is worth knowing before you book.</p>',
+  '</section>',
+  '</main>',
+  footer(),
+  '<script src="/app.js" defer></' + 'script>'
+  ].join('');
+}
+
 /* ---- Roadmap item 5: buyer scorecard landing page. Score itself renders client-side
    in the report (client.js), from the same DVSA history the checker already fetches. ---- */
 function scorecardPage(prefill){
   return [
-  head('Is This Car a Good Buy? Free MOT Scorecard for Cars, Vans, Motorcycles and Lorries | MOT Check UK',
-       'A free buyer scorecard for any UK vehicle, built only from official DVSA MOT history. Mileage consistency, failure record, dangerous defects and repeated advisories, explained in plain English.',
+  head('Is This Car a Good Buy? Free MOT Buyer Scorecard',
+       'A free buyer scorecard for any UK vehicle, built only from official DVSA MOT history. Mileage, failures, dangerous defects and advisories in plain English.',
        SITE + '/scorecard', null),
   '<main class="wrap">',
   '<section class="hero" style="padding-top:44px">',
@@ -623,7 +670,7 @@ function tradePage(){
   ];
   return [
   head('Bulk MOT Checking for Dealers, Garages and Fleets | MOT Check UK',
-       'Free MOT history checks for cars, vans, motorcycles and lorries, for small dealers, independent garages and van fleets. What the DVSA record can tell you about stock, what it cannot, and what we are building next.',
+       'Free MOT history checks for dealers, garages and van fleets. What the DVSA record tells you about stock, what it cannot, and what we are building next.',
        SITE + '/trade', faq),
   '<main class="wrap">',
   '<h1>MOT checking for dealers, garages and fleets</h1>',
@@ -709,6 +756,7 @@ const SITEMAP = [
   '<url><loc>' + SITE + '/compare</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>',
   '<url><loc>' + SITE + '/ulez</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
   '<url><loc>' + SITE + '/scorecard</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
+  '<url><loc>' + SITE + '/reminders</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
   '<url><loc>' + SITE + '/trade</loc><priority>0.6</priority><changefreq>monthly</changefreq></url>',
   '</urlset>'
 ].join('');
@@ -785,6 +833,7 @@ http.createServer(function(req, res){
   if(path === '/ulez') return send(res, 200, 'text/html; charset=utf-8', ulezPage());
   if(path === '/compare') return send(res, 200, 'text/html; charset=utf-8', comparePage());
   if(path === '/scorecard') return send(res, 200, 'text/html; charset=utf-8', scorecardPage(cleanReg(params.get('reg'))));
+  if(path === '/reminders') return send(res, 200, 'text/html; charset=utf-8', remindersPage(cleanReg(params.get('reg'))));
   if(path === '/trade') return send(res, 200, 'text/html; charset=utf-8', tradePage());
 
   if(path.indexOf('/check/') === 0){
