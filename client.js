@@ -407,6 +407,7 @@ function render(v, reg){
   out.innerHTML = reportHtml(v, a);
   pushRecent(r, name);
   try{ history.replaceState({}, '', '/check/' + encodeURIComponent(r)); }catch(e){}
+  try{ gaPage(); }catch(e){}
   var y = out.getBoundingClientRect().top + window.scrollY - 70;
   if(window.scrollY < y - 40) window.scrollTo({ top:y, behavior:'smooth' });
 }
@@ -474,6 +475,7 @@ function runCompare(ra, rb){
     out.innerHTML = verdict(res[0], res[1], ra, rb) + '<div class="cmp">' + cmpCol(res[0], ra) + cmpCol(res[1], rb) + '</div>'
       + '<div class="actions noprint"><button type="button" class="btn ghost js-print">Print or save as PDF</button></div>';
     try{ history.replaceState({}, '', '/compare?a=' + encodeURIComponent(ra) + '&b=' + encodeURIComponent(rb)); }catch(e){}
+    try{ gaPage(); }catch(e){}
     if(res[0] && res[0].registration) pushRecent(ra, (String(res[0].make||'') + ' ' + String(res[0].model||'')).trim());
     if(res[1] && res[1].registration) pushRecent(rb, (String(res[1].make||'') + ' ' + String(res[1].model||'')).trim());
   }).catch(function(){
@@ -528,6 +530,22 @@ paintRecent();
    Allow is clicked. Declining is remembered too, so we stop asking. */
 var GA_ID = 'G-VX0H5Z7VVV';
 var CKEY = 'bmc_consent_v1';
+/* The consent copy promises that looked-up registrations never reach Google Analytics.
+   The URL becomes /check/<REG> after a lookup, so automatic page_views would break that
+   promise. Page views are therefore sent manually with the registration stripped. */
+function gaPath(){
+  var p = location.pathname;
+  return p.indexOf('/check/') === 0 ? '/check' : p;
+}
+function gaPage(){
+  if(!window.__gaOn || !window.gtag) return;
+  var p = gaPath();
+  window.gtag('event', 'page_view', {
+    page_location: location.origin + p,
+    page_path: p,
+    page_title: p === '/check' ? 'Vehicle check | MOT Check UK' : document.title
+  });
+}
 function loadGA(){
   if(window.__gaOn) return;
   window.__gaOn = true;
@@ -538,7 +556,8 @@ function loadGA(){
   window.dataLayer = window.dataLayer || [];
   window.gtag = function(){ window.dataLayer.push(arguments); };
   window.gtag('js', new Date());
-  window.gtag('config', GA_ID, { anonymize_ip: true });
+  window.gtag('config', GA_ID, { anonymize_ip: true, send_page_view: false });
+  gaPage();
 }
 function setConsent(v){
   try{ localStorage.setItem(CKEY, v); }catch(e){}

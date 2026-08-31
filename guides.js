@@ -60,10 +60,18 @@ setInterval(loadRemoteGuides, 300000);
   _h.createServer = function(handler){
     var wrapped = function(req, res){
       try {
+        /* www serves a full duplicate otherwise; 301 to the apex host */
+        var host = String(req.headers.host || '').toLowerCase();
+        if (host.indexOf('www.') === 0) {
+          res.writeHead(301, { 'Location': 'https://' + host.slice(4) + String(req.url || '/') });
+          res.end();
+          return;
+        }
         var u = String(req.url || '').split('?')[0];
         if (u.indexOf('/guides/') === 0) {
           var slug = u.slice(8).replace(/\/+$/, '');
-          if (slug && slug.indexOf('sitemap') !== 0) {
+          /* 'healthz' is a real route in the router below, not a guide slug */
+          if (slug && slug.indexOf('sitemap') !== 0 && slug !== 'healthz') {
             var list = allGuides();
             var found = false;
             for (var i = 0; i < list.length; i++) { if (list[i] && list[i].slug === slug) { found = true; break; } }
@@ -512,9 +520,13 @@ function head(title, desc, canon, extra){
  "<meta property='og:title' content='" + esc(title) + "'>",
  "<meta property='og:description' content='" + esc(desc) + "'>",
  "<meta property='og:url' content='" + canon + "'>",
- "<meta name='twitter:card' content='summary'>",
+ "<meta property='og:image' content='" + SITE + "/og.png'>",
+ "<meta property='og:image:width' content='1200'>",
+ "<meta property='og:image:height' content='630'>",
+ "<meta name='twitter:card' content='summary_large_image'>",
  "<meta name='twitter:title' content='" + esc(title) + "'>",
  "<meta name='twitter:description' content='" + esc(desc) + "'>",
+ "<meta name='twitter:image' content='" + SITE + "/og.png'>",
  "<style>" + CSS + "</style>",
  (extra || ""),
  "</head><body>",
@@ -561,6 +573,7 @@ function articleJsonLd(g){
  var o = {
   "@context":"https://schema.org","@type":"Article",
   "headline": g.title, "description": g.desc,
+  "image": SITE + "/og.png",
   "datePublished": g.date, "dateModified": g.date,
   "author": {"@type":"Person","name":"Ruhul Amin"},
   "publisher": {"@type":"Organization","name":"MOT Check UK","url":SITE},
@@ -628,15 +641,31 @@ function sitemap(){
  });
  return "<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>" + urls.join('') + "</urlset>";
 }
+var _zlibSend = require('zlib');
 function send(res, code, type, body){
- res.writeHead(code, {'Content-Type': type, 'Cache-Control': 'public, max-age=600'});
+ var headers = {
+  'Content-Type': type,
+  'Cache-Control': 'public, max-age=600',
+  'X-Content-Type-Options': 'nosniff',
+  'Strict-Transport-Security': 'max-age=15552000',
+  'Vary': 'Accept-Encoding'
+ };
+ if (res._gz && typeof body === 'string' && body.length > 1024) {
+  body = _zlibSend.gzipSync(Buffer.from(body, 'utf8'));
+  headers['Content-Encoding'] = 'gzip';
+ }
+ res.writeHead(code, headers);
  res.end(body);
 }
 http.createServer(function(req, res){
  var raw = req.url || '/';
  var q = raw.indexOf('?');
  var p = q === -1 ? raw : raw.slice(0, q);
- if(p.length > 1 && p.charAt(p.length - 1) === '/') p = p.slice(0, -1);
+ res._gz = /\bgzip\b/.test(String(req.headers['accept-encoding'] || ''));
+ if(p.length > 1 && p.charAt(p.length - 1) === '/'){
+  res.writeHead(301, {'Location': p.replace(/\/+$/, '') || '/'});
+  return res.end();
+ }
  if(p === '/guides/sitemap.xml'){ return send(res, 200, 'application/xml; charset=utf-8', sitemap()); }
  if(p === '/guides/healthz'){ return send(res, 200, 'application/json', JSON.stringify({ok:true, guides:allGuides().length})); }
  if(p === '/guides' || p === '/guides/'){ return send(res, 200, 'text/html; charset=utf-8', indexPage()); }

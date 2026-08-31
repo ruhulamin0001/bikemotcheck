@@ -20,6 +20,14 @@
   _h.createServer = function(handler){
     var wrapped = function(req, res){
       try {
+        /* www serves a full duplicate of the site otherwise: Traefik routes both hosts
+           here and canonical tags alone leave two indexable copies. 301 to the apex. */
+        var host = String(req.headers.host || '').toLowerCase();
+        if (host.indexOf('www.') === 0) {
+          res.writeHead(301, { 'Location': 'https://' + host.slice(4) + String(req.url || '/') });
+          res.end();
+          return;
+        }
         var p = String(req.url || '').split('?')[0].split('#')[0];
         var known = false;
         for (var i = 0; i < PREFIX.length; i++) { if (p.indexOf(PREFIX[i]) === 0) { known = true; break; } }
@@ -109,6 +117,9 @@ function cacheSet(k, v){ cache[k] = { val: v, exp: Date.now() + 6*3600*1000 };
 var hits = {};
 function allowed(ip){
   var now = Date.now(), h = hits[ip];
+  /* the map grows one entry per unique IP and nothing ever deleted them; on a
+     long-lived container that is a slow leak, so reset it when it gets large */
+  if (!h && Object.keys(hits).length > 20000) hits = {};
   if (!h || now > h.reset) { hits[ip] = { n: 1, reset: now + 3600*1000 }; return true; }
   h.n++; return h.n <= 40;
 }
@@ -147,11 +158,16 @@ function lookup(reg){
 function pad(n){ return n < 10 ? '0' + n : String(n); }
 function icsStamp(d){ return d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate()) + 'T' + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + '00Z'; }
 function icsDate(d){ return d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate()); }
+/* ICS text values must not carry raw newlines or unescaped separators, or a crafted
+   ?v= parameter could inject extra calendar properties into the downloaded file. */
+function icsText(s){
+  return String(s == null ? '' : s).replace(/[\r\n]+/g, ' ').replace(/([\\;,])/g, '\\$1').slice(0, 120);
+}
 function buildIcs(reg, dateStr, vehicle){
   var d = new Date(dateStr);
   if (isNaN(d.getTime())) return null;
   var end = new Date(d.getTime() + 86400000);
-  var title = 'MOT due: ' + reg + (vehicle ? ' (' + vehicle + ')' : '');
+  var title = 'MOT due: ' + reg + (vehicle ? ' (' + icsText(vehicle) + ')' : '');
   return [
     'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MOT Check UK//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH',
     'BEGIN:VEVENT',
@@ -635,9 +651,12 @@ function tradePage(){
   '<p>Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a>. A person reads it.</p>',
   '<h2>The commercial position, stated plainly</h2>',
   '<p>This site is free and stays free for the MOT record, because the MOT record is public data and charging for it would be indefensible. If a paid product ever appears here it will be for data we have had to licence, it will say exactly what is in it before you pay, and it will be priced against what the market actually charges rather than against the old anchor.</p>',
+  '<h2>Frequently asked</h2>',
+  faq.map(function(f){ return '<h3>' + esc(f.q) + '</h3><p>' + esc(f.a) + '</p>'; }).join(''),
   '</section>',
   '</main>',
-  footer()
+  footer(),
+  '<script src="/app.js" defer></' + 'script>'
   ].join('');
 }
 
@@ -694,13 +713,24 @@ const SITEMAP = [
   '</urlset>'
 ].join('');
 
+var zlib = require('zlib');
 function send(res, code, type, body, cache){
-  res.writeHead(code, {
+  var headers = {
     'Content-Type': type,
     'Cache-Control': cache || 'public, max-age=300',
     'X-Content-Type-Options': 'nosniff',
-    'Referrer-Policy': 'strict-origin-when-cross-origin'
-  });
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Strict-Transport-Security': 'max-age=15552000'
+  };
+  /* nothing upstream compresses (no CDN in front), so a 21KB page went out as 21KB.
+     Text bodies over 1KB are gzipped here when the client accepts it. */
+  var compressible = /^(text\/|application\/(json|xml|javascript|manifest))/.test(type) || type.indexOf('svg') > -1;
+  if (res._gz && compressible && typeof body === 'string' && body.length > 1024) {
+    body = zlib.gzipSync(Buffer.from(body, 'utf8'));
+    headers['Content-Encoding'] = 'gzip';
+  }
+  if (compressible) headers['Vary'] = 'Accept-Encoding';
+  res.writeHead(code, headers);
   res.end(body);
 }
 
@@ -709,7 +739,13 @@ http.createServer(function(req, res){
   var qi = raw.indexOf('?');
   var path = qi === -1 ? raw : raw.slice(0, qi);
   var query = qi === -1 ? '' : raw.slice(qi + 1);
-  if(path.length > 1 && path.charAt(path.length - 1) === '/') path = path.slice(0, -1);
+  res._gz = /\bgzip\b/.test(String(req.headers['accept-encoding'] || ''));
+  if(path.length > 1 && path.charAt(path.length - 1) === '/'){
+    /* /ulez/ used to serve a 200 duplicate of /ulez; one canonical URL per page */
+    var stripped = path.replace(/\/+$/, '') || '/';
+    res.writeHead(301, { Location: stripped + (query ? '?' + query : '') });
+    return res.end();
+  }
   var params = new URLSearchParams(query);
 
   if(path === '/healthz') return send(res, 200, 'application/json', JSON.stringify({ ok:true, cached:Object.keys(cache).length }), 'no-store');
