@@ -272,7 +272,10 @@ function flagsOf(a, v){
   }
   if(v.hasOutstandingRecall === 'Yes'){
     f.push({c:'red', t:'Outstanding safety recall',
-      d:'DVSA records an unresolved manufacturer recall. A franchised dealer will normally fix this free of charge.'});
+      d:'DVSA records an unresolved manufacturer recall. A franchised dealer will fix this free of charge, however old the vehicle is. If you are buying, ask the seller to have it done first.'});
+  } else if(v.hasOutstandingRecall === 'No'){
+    f.push({c:'green', t:'No outstanding recall recorded',
+      d:'DVSA holds no outstanding manufacturer recall against this registration. Not every manufacturer supplies recall data yet, so treat this as a good sign rather than a guarantee.'});
   }
   return f;
 }

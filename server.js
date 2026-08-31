@@ -11,7 +11,7 @@
     '/': 1, '/healthz': 1, '/robots.txt': 1, '/sitemap.xml': 1, '/manifest.webmanifest': 1,
     '/icon.svg': 1, '/favicon.svg': 1, '/favicon.ico': 1, '/og.png': 1, '/og.svg': 1,
     '/apple-touch-icon.png': 1, '/app.js': 1, '/api/mot': 1, '/ulez': 1, '/compare': 1,
-    '/scorecard': 1, '/trade': 1, '/reminders': 1,
+    '/scorecard': 1, '/trade': 1, '/reminders': 1, '/recalls': 1,
     '/check': 1, '/calendar': 1
   };
   var PREFIX = ['/check/', '/calendar/', '/guides'];
@@ -405,7 +405,7 @@ function footer(){
   '<footer><div class="wrap">',
   '<p><strong>MOT Check UK</strong> reads the official DVSA MOT History API. It is free, needs no account, and we do not store the registrations you look up.</p>',
   '<p>Data covers England, Scotland and Wales. Northern Ireland MOTs are administered by the DVA and are not included. An MOT is a roadworthiness snapshot on the day of the test, not a mechanical warranty, and this site is general information rather than advice on any individual purchase.</p>',
-  '<p><a href="/guides">MOT guides</a> &middot; <a href="/compare">Compare two vehicles</a> &middot; <a href="/reminders">MOT reminders</a> &middot; <a href="/">Run a check</a></p>',
+  '<p><a href="/guides">MOT guides</a> &middot; <a href="/compare">Compare two vehicles</a> &middot; <a href="/reminders">MOT reminders</a> &middot; <a href="/recalls">Recall check</a> &middot; <a href="/">Run a check</a></p>',
   '<p>Something wrong, out of date, or a vehicle we got wrong? Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> and a person will read it.</p>',
   '<p class="meta">Built by Ruhul Amin, Hertfordshire. Figures checked August 2026.</p>',
   '</div></footer></body></html>'
@@ -622,6 +622,48 @@ function remindersPage(prefill){
   ].join('');
 }
 
+/* ---- Roadmap item 2: recall check. No separate Recalls API needed — since 2023 DVSA
+   includes hasOutstandingRecall (Yes/No/Unknown) in the MOT history response this site
+   already fetches, fed daily by participating manufacturers and monthly by SMMT. The
+   report in client.js surfaces the flag; this page fronts it for recall searches. ---- */
+function recallsPage(prefill){
+  var faq = [
+    { q:'How do I check if my vehicle has an outstanding recall?',
+      a:'Enter the registration above. We read the official DVSA record, which flags an outstanding safety recall alongside the full MOT history, and show it in the report.' },
+    { q:'Where does the recall information come from?',
+      a:'DVSA. Many manufacturers now send DVSA recall data daily, and the rest is updated monthly through the SMMT, the manufacturers’ trade body. The same flag appears on new MOT certificates.' },
+    { q:'What should I do if my vehicle has a recall?',
+      a:'Contact a franchised dealer for the make. Safety recall work is done free of charge, however old the vehicle is and however many owners it has had.' },
+    { q:'Why does my vehicle show no recall information?',
+      a:'Not every manufacturer supplies recall data to DVSA yet. No flag is not a guarantee; for chapter and verse use the official GOV.UK recall checker as well.' }
+  ];
+  return [
+  head('Free Vehicle Recall Check by Registration',
+       'Check any UK car, van, motorcycle or lorry for an outstanding safety recall, free, using the official DVSA record, together with its full MOT history.',
+       SITE + '/recalls', faq),
+  '<main class="wrap">',
+  '<section class="hero" style="padding-top:44px">',
+  '<h1>Is there a recall <span class="grad">on this vehicle?</span></h1>',
+  '<p class="sub">Enter a registration and we read the official DVSA record. If the manufacturer has an outstanding safety recall against it, the report says so plainly, alongside the full MOT and mileage history. Free, no sign up.</p>',
+  searchBlock(prefill),
+  '<div class="trust"><span>Official DVSA data</span><span>Cars, vans, motorcycles, lorries</span><span>Recall fixes are free at dealers</span></div>',
+  '</section>',
+  '<div id="out"></div>',
+  '<section>',
+  '<h2>What a recall actually means</h2>',
+  '<p>A safety recall means the manufacturer has told DVSA that something on the vehicle needs fixing before it is safe: airbags, fuel lines, seatbelt pretensioners, brake components. It is not a suggestion. The fix is done <strong>free of charge</strong> by a franchised dealer, no matter how old the vehicle is or how many owners it has had.</p>',
+  '<p>If you are buying used, an outstanding recall is not necessarily a reason to walk away. It is a free repair the seller never bothered to have done, and a fair thing to ask them to sort before you hand over money.</p>',
+  '<h2>What this check can and cannot see</h2>',
+  '<p>We show the outstanding-recall flag DVSA holds against the registration. Many manufacturers now feed DVSA daily; the rest update monthly through the SMMT. Two honest limits: the flag does not say <em>which</em> recall is outstanding, and a vehicle with no flag is not guaranteed clear, because not every manufacturer supplies data yet. For the detail, use the official <a href="https://www.check-vehicle-recalls.service.gov.uk/recall-type/vehicle/make" rel="noopener" target="_blank">GOV.UK recall checker</a> as well — our value is that you get the recall flag together with the <a href="/">full MOT history</a>, the <a href="/scorecard">buyer score</a> and the mileage trail in one search.</p>',
+  '<h2>Frequently asked</h2>',
+  faq.map(function(f){ return '<h3>' + esc(f.q) + '</h3><p>' + esc(f.a) + '</p>'; }).join(''),
+  '</section>',
+  '</main>',
+  footer(),
+  '<script src="/app.js" defer></' + 'script>'
+  ].join('');
+}
+
 /* ---- Roadmap item 5: buyer scorecard landing page. Score itself renders client-side
    in the report (client.js), from the same DVSA history the checker already fetches. ---- */
 function scorecardPage(prefill){
@@ -757,6 +799,7 @@ const SITEMAP = [
   '<url><loc>' + SITE + '/ulez</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
   '<url><loc>' + SITE + '/scorecard</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
   '<url><loc>' + SITE + '/reminders</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
+  '<url><loc>' + SITE + '/recalls</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
   '<url><loc>' + SITE + '/trade</loc><priority>0.6</priority><changefreq>monthly</changefreq></url>',
   '</urlset>'
 ].join('');
@@ -834,6 +877,7 @@ http.createServer(function(req, res){
   if(path === '/compare') return send(res, 200, 'text/html; charset=utf-8', comparePage());
   if(path === '/scorecard') return send(res, 200, 'text/html; charset=utf-8', scorecardPage(cleanReg(params.get('reg'))));
   if(path === '/reminders') return send(res, 200, 'text/html; charset=utf-8', remindersPage(cleanReg(params.get('reg'))));
+  if(path === '/recalls') return send(res, 200, 'text/html; charset=utf-8', recallsPage(cleanReg(params.get('reg'))));
   if(path === '/trade') return send(res, 200, 'text/html; charset=utf-8', tradePage());
 
   if(path.indexOf('/check/') === 0){
