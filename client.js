@@ -278,8 +278,38 @@ function flagsOf(a, v){
 }
 
 /* ---------- stat tiles ---------- */
-function stats(a){
+/* ---------- buyer score: our arithmetic on the same DVSA data, not a DVSA rating ---------- */
+function scoreOf(v, a){
+  if(!a || !a.total) return null;
+  var score = 100;
+  if(a.back.length) score -= 40;
+  var bigGaps = 0;
+  a.gaps.forEach(function(g){ if(g.days > 548) bigGaps++; });
+  if(bigGaps) score -= Math.min(20, bigGaps * 10);
+  if((a.total - a.passed) / a.total > 0.5) score -= 15;
+  if(a.dang) score -= Math.min(20, a.dang * 10);
+  var counts = {};
+  a.tests.forEach(function(t){ (t.defects||[]).forEach(function(x){
+    if(String(x.type||'').toUpperCase().indexOf('ADVISORY') === -1) return;
+    var k = String(x.text||'').toLowerCase().replace(/[^a-z ]/g,'').split(' ').slice(0,4).join(' ');
+    if(k) counts[k] = (counts[k]||0) + 1;
+  }); });
+  var rep = 0; for(var k2 in counts){ if(counts[k2] >= 3) rep++; }
+  if(rep) score -= 10;
+  var first = dt(v.firstUsedDate) || (a.tests[0] ? dt(a.tests[0].completedDate) : null);
+  var age = first ? (new Date() - first) / 31557600000 : 0;
+  if(a.apm != null && a.apm > 0 && a.apm < 2000 && age >= 3) score -= 5;
+  score = Math.max(0, Math.min(100, score));
+  var grade = score >= 85 ? 'Looks clean' : score >= 65 ? 'Worth a closer look' : score >= 40 ? 'Ask questions first' : 'Walk carefully';
+  return { score: score, grade: grade };
+}
+
+function stats(a, sc){
   var h = '<div class="stats">';
+  if(sc && sc.score != null){
+    var scls = sc.score >= 85 ? 'ok' : sc.score >= 40 ? 'warn' : 'bad';
+    h += '<div class="stat"><div class="k">Buyer score</div><div class="v ' + scls + '">' + sc.score + '</div><div class="n">out of 100 &middot; ' + sc.grade + '</div></div>';
+  }
   if(a.latest != null) h += '<div class="stat"><div class="k">Latest mileage</div><div class="v">' + cm(a.latest) + '</div><div class="n">miles at last test</div></div>';
   if(a.apm != null){
     var pc = Math.round(a.apm/a.bench*100);
@@ -312,7 +342,8 @@ function reportHtml(v, a){
        + '<a class="btn ghost" style="display:inline-block;margin-top:8px;text-decoration:none" href="/calendar/' + encodeURIComponent(reg) + '.ics?d=' + encodeURIComponent(a.expiry) + '&v=' + encodeURIComponent(name.trim()) + '">Add reminder to calendar</a></div></div>';
   }
   h += '</div>';
-  h += stats(a);
+  var sc = null; try{ sc = scoreOf(v, a); }catch(e){}
+  h += stats(a, sc);
   h += '<h3>Buyer report</h3>';
   flagsOf(a, v).forEach(function(f){
     h += '<div class="flag"><span class="dot d-' + f.c + '"></span><div><strong>' + esc(f.t) + '</strong><p class="meta">' + esc(f.d) + '</p></div></div>';

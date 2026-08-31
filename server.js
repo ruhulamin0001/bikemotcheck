@@ -11,6 +11,7 @@
     '/': 1, '/healthz': 1, '/robots.txt': 1, '/sitemap.xml': 1, '/manifest.webmanifest': 1,
     '/icon.svg': 1, '/favicon.svg': 1, '/favicon.ico': 1, '/og.png': 1, '/og.svg': 1,
     '/apple-touch-icon.png': 1, '/app.js': 1, '/api/mot': 1, '/ulez': 1, '/compare': 1,
+    '/scorecard': 1, '/trade': 1,
     '/check': 1, '/calendar': 1
   };
   var PREFIX = ['/check/', '/calendar/', '/guides'];
@@ -558,6 +559,88 @@ function comparePage(){
   ].join('');
 }
 
+/* ---- Roadmap item 5: buyer scorecard landing page. Score itself renders client-side
+   in the report (client.js), from the same DVSA history the checker already fetches. ---- */
+function scorecardPage(prefill){
+  return [
+  head('Is This Car a Good Buy? Free MOT Scorecard for Cars, Vans, Motorcycles and Lorries | MOT Check UK',
+       'A free buyer scorecard for any UK vehicle, built only from official DVSA MOT history. Mileage consistency, failure record, dangerous defects and repeated advisories, explained in plain English.',
+       SITE + '/scorecard', null),
+  '<main class="wrap">',
+  '<section class="hero" style="padding-top:44px">',
+  '<h1>Is this vehicle <span class="grad">a good buy?</span></h1>',
+  '<p class="sub">Enter a registration for any UK car, van, motorcycle or lorry. We read the official DVSA MOT history and turn it into a plain scorecard: what is fine, what to ask about, and what should stop you. Free, no sign up.</p>',
+  searchBlock(prefill),
+  '</section>',
+  '<div id="out"></div>',
+  '<section>',
+  '<h2>What the score is, and what it is not</h2>',
+  '<p>This is our arithmetic on public DVSA data. It is not a DVSA rating and it is not a mechanical inspection. It cannot see outstanding finance, insurance write-offs or stolen markers, because none of that is public data. What it does is read the MOT trail the way an experienced buyer would, and show its working.</p>',
+  '<h2>What we deduct for</h2>',
+  '<ul>',
+  '<li><strong>A mileage reading that falls between tests.</strong> The heaviest deduction, because it is the only thing on this page we can prove.</li>',
+  '<li><strong>Gaps of more than 18 months</strong> between tests.</li>',
+  '<li><strong>Dangerous defects</strong> in the record.</li>',
+  '<li><strong>A failure rate above half</strong> of all tests taken.</li>',
+  '<li><strong>The same advisory appearing three times or more</strong> without being fixed.</li>',
+  '<li><strong>Very low annual mileage</strong> on a vehicle old enough for it to matter.</li>',
+  '</ul>',
+  '<p>Read <a href="/guides/spot-a-clocked-car-uk">how to spot a clocked vehicle</a> and <a href="/guides/mot-defect-categories-uk">what dangerous, major and minor mean</a> for the method behind the first and third of those.</p>',
+  '</section>',
+  '</main>',
+  footer(),
+  '<script src="/app.js" defer></' + 'script>'
+  ].join('');
+}
+
+/* ---- Roadmap item 7: trade page for small dealers, garages and fleets ---- */
+function tradePage(){
+  var faq = [
+    { q:'Is the checker free for trade use?',
+      a:'Yes. There is no account, no rate card and no per-check charge. If you are checking stock you have taken in, that is the same lookup a private buyer makes.' },
+    { q:'Can I check a list of registrations in one go?',
+      a:'Not yet. Bulk upload is the thing we are building next and the form on this page is how you tell us what you need.' },
+    { q:'Where does the data come from?',
+      a:'The official DVSA MOT History API, for England, Scotland and Wales. Northern Ireland MOTs are administered by the DVA and are not included.' },
+    { q:'Does it tell me about finance, write-offs or theft?',
+      a:'No. This site reads the MOT record only. Finance, write-off and stolen markers come from separate commercial databases we do not licence, and we will not imply otherwise.' }
+  ];
+  return [
+  head('Bulk MOT Checking for Dealers, Garages and Fleets | MOT Check UK',
+       'Free MOT history checks for cars, vans, motorcycles and lorries, for small dealers, independent garages and van fleets. What the DVSA record can tell you about stock, what it cannot, and what we are building next.',
+       SITE + '/trade', faq),
+  '<main class="wrap">',
+  '<h1>MOT checking for dealers, garages and fleets</h1>',
+  '<p class="sub">Free, unlimited, no account. Cars, vans, motorcycles and lorries. If you buy stock at auction, take part exchanges, or run a handful of vans, the DVSA MOT record is the cheapest due diligence available and most people read about a third of what is in it.</p>',
+  '<section>',
+  '<h2>What the MOT record is genuinely good for</h2>',
+  '<ul>',
+  '<li><strong>Mileage verification.</strong> Every test writes a dated odometer reading. A reading that falls between tests is the one thing you can actually prove, and it is the single most valuable line in the file.</li>',
+  '<li><strong>Advisory patterns.</strong> The same advisory three years running is a job nobody has done. On a part exchange that is a number you can put in the offer.</li>',
+  '<li><strong>Gaps.</strong> A missing year usually means the vehicle sat. Perished rubber, seized calipers and a tired battery follow.</li>',
+  '<li><strong>Failure rate against the fleet.</strong> The national initial failure rate gives you a baseline to judge a specific vehicle against.</li>',
+  '</ul>',
+  '<h2>What it is not</h2>',
+  '<p>Being straight about this is the whole point of the site. The MOT record carries <strong>no</strong> finance, write-off, theft, keeper or import data. Those sit in separate commercial databases that we do not licence. Anyone offering you those from a free MOT lookup is either reselling somebody else&rsquo;s report or guessing. If you need a provenance check before you buy at auction, buy one from a provider who holds the licences, and treat this site as the free layer underneath it.</p>',
+  '<p>The MOT also says nothing about the clutch, the gearbox, the engine internals, the air conditioning or the electronics. A vehicle can pass on the morning its head gasket goes.</p>',
+  '<h2>Using it today</h2>',
+  '<ol>',
+  '<li>Run the registration on the <a href="/">free checker</a>. Full history, mileage chart and an automatic buyer report.</li>',
+  '<li>Put a part exchange next to the vehicle you are selling on the <a href="/compare">compare page</a>.</li>',
+  '<li>For vans and lorries, check which test regime applies before you quote: <a href="/guides/hgv-trailer-annual-test-vs-van-mot-uk">the 3,500kg line</a> decides whether a vehicle gets an MOT or a DVSA annual test.</li>',
+  '<li>For anything over 40 years old, expect the record to stop: <a href="/guides/classic-car-mot-exemption-uk">MOT exemption</a> means the vehicle stops generating history.</li>',
+  '</ol>',
+  '<h2>What we are building</h2>',
+  '<p>Bulk checking is the next thing on the list: paste or upload a list of registrations, get the MOT history for all of them back in one table you can export. It is not built yet and we are not taking sign-ups or payment for it. If it would be useful, say so and say roughly how many vehicles a month you would run, because that decides whether it is worth building.</p>',
+  '<p>Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a>. A person reads it.</p>',
+  '<h2>The commercial position, stated plainly</h2>',
+  '<p>This site is free and stays free for the MOT record, because the MOT record is public data and charging for it would be indefensible. If a paid product ever appears here it will be for data we have had to licence, it will say exactly what is in it before you pay, and it will be priced against what the market actually charges rather than against the old anchor.</p>',
+  '</section>',
+  '</main>',
+  footer()
+  ].join('');
+}
+
 const OG_SVG = [
 '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">',
 '<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">',
@@ -606,6 +689,8 @@ const SITEMAP = [
   '<url><loc>' + SITE + '/</loc><priority>1.0</priority><changefreq>weekly</changefreq></url>',
   '<url><loc>' + SITE + '/compare</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>',
   '<url><loc>' + SITE + '/ulez</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
+  '<url><loc>' + SITE + '/scorecard</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
+  '<url><loc>' + SITE + '/trade</loc><priority>0.6</priority><changefreq>monthly</changefreq></url>',
   '</urlset>'
 ].join('');
 
@@ -663,6 +748,8 @@ http.createServer(function(req, res){
 
   if(path === '/ulez') return send(res, 200, 'text/html; charset=utf-8', ulezPage());
   if(path === '/compare') return send(res, 200, 'text/html; charset=utf-8', comparePage());
+  if(path === '/scorecard') return send(res, 200, 'text/html; charset=utf-8', scorecardPage(cleanReg(params.get('reg'))));
+  if(path === '/trade') return send(res, 200, 'text/html; charset=utf-8', tradePage());
 
   if(path.indexOf('/check/') === 0){
     var pre0 = cleanReg(decodeURIComponent(path.slice(7)));
