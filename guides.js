@@ -577,12 +577,30 @@ function articleJsonLd(g){
  };
  return "<script type='application/ld+json'>" + JSON.stringify(o) + "<" + "/script><script type='application/ld+json'>" + JSON.stringify(b) + "<" + "/script>";
 }
+var MONTHS = ['January','February','March','April','May','June','July','August',
+              'September','October','November','December'];
+function fmtDate(d){
+  try {
+    var t = Date.parse(d);
+    if (!t) return '';
+    var dt = new Date(t);
+    return dt.getUTCDate() + ' ' + MONTHS[dt.getUTCMonth()] + ' ' + dt.getUTCFullYear();
+  } catch(e){ return ''; }
+}
+function fmtChecked(d){
+  try {
+    var t = Date.parse(d);
+    if (!t) return 'August 2026';
+    var dt = new Date(t);
+    return MONTHS[dt.getUTCMonth()] + ' ' + dt.getUTCFullYear();
+  } catch(e){ return 'August 2026'; }
+}
 function guidePage(g){
  return [
   head(g.title + " | MOT Check UK", g.desc, SITE + "/guides/" + g.slug, articleJsonLd(g)),
   "<p class='meta'><a href='/'>Home</a> &rsaquo; <a href='/guides'>Guides</a></p>",
   "<h1>" + esc(g.title) + "</h1>",
-  "<p class='meta'>By Ruhul Amin &middot; Published 21 August 2026 &middot; " + g.mins + " min read &middot; Figures checked August 2026</p>",
+  "<p class='meta'>By Ruhul Amin &middot; Published " + (fmtDate(g.date) || '21 August 2026') + " &middot; " + g.mins + " min read &middot; Figures checked " + fmtChecked(g.date) + "</p>",
   g.body,
   "<div class='card'><strong>Check a vehicle now</strong><p class='meta'>Free, no sign up. Full MOT history, mileage chart and an automatic buyer report from DVSA data.</p><p><a class='cta' href='/'>Run a free MOT check</a></p></div>",
   related(g.slug),
