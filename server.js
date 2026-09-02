@@ -11,7 +11,7 @@
     '/': 1, '/healthz': 1, '/robots.txt': 1, '/sitemap.xml': 1, '/manifest.webmanifest': 1,
     '/icon.svg': 1, '/favicon.svg': 1, '/favicon.ico': 1, '/og.png': 1, '/og.svg': 1,
     '/apple-touch-icon.png': 1, '/app.js': 1, '/api/mot': 1, '/ulez': 1, '/compare': 1,
-    '/scorecard': 1, '/trade': 1, '/reminders': 1, '/recalls': 1,
+    '/scorecard': 1, '/trade': 1, '/reminders': 1, '/recalls': 1, '/history-check': 1,
     '/check': 1, '/calendar': 1
   };
   var PREFIX = ['/check/', '/calendar/', '/guides'];
@@ -405,7 +405,7 @@ function footer(){
   '<footer><div class="wrap">',
   '<p><strong>MOT Check UK</strong> reads the official DVSA MOT History API. It is free, needs no account, and we do not store the registrations you look up.</p>',
   '<p>Data covers England, Scotland and Wales. Northern Ireland MOTs are administered by the DVA and are not included. An MOT is a roadworthiness snapshot on the day of the test, not a mechanical warranty, and this site is general information rather than advice on any individual purchase.</p>',
-  '<p><a href="/guides">MOT guides</a> &middot; <a href="/compare">Compare two vehicles</a> &middot; <a href="/reminders">MOT reminders</a> &middot; <a href="/recalls">Recall check</a> &middot; <a href="/">Run a check</a></p>',
+  '<p><a href="/guides">MOT guides</a> &middot; <a href="/compare">Compare two vehicles</a> &middot; <a href="/reminders">MOT reminders</a> &middot; <a href="/recalls">Recall check</a> &middot; <a href="/history-check">Full history check</a> &middot; <a href="/">Run a check</a></p>',
   '<p>Something wrong, out of date, or a vehicle we got wrong? Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> and a person will read it.</p>',
   '<p class="meta">Built by Ruhul Amin, Hertfordshire. Figures checked August 2026.</p>',
   '</div></footer></body></html>'
@@ -622,6 +622,61 @@ function remindersPage(prefill){
   ].join('');
 }
 
+/* ---- Roadmap item 8: paid vehicle history check STUB. Measures demand before any money
+   moves. The button fires the GA4 event paid_check_intent and says honestly that the paid
+   report is not live yet. NO payment, NO card fields, NO data-supplier calls from here.
+   Launch gate and the full build plan live in VDG-IMPLEMENTATION-PLAN.md (emo-data).
+   NEVER use the word "HPI" on this page — registered trade mark of HPI Limited. ---- */
+function historyCheckPage(){
+  var faq = [
+    { q:'What would the full history check cover?',
+      a:'Outstanding finance, insurance write-off category, police stolen marker, scrapped and import/export status, plate changes, keeper count and a valuation, together with the full MOT and mileage history this site already shows free.' },
+    { q:'Why is it not free like the MOT check?',
+      a:'The MOT record is public data, so charging for it would be indefensible and we never will. Finance, write-off and stolen records sit in commercial and police databases that must be licensed per lookup, which is why every provider charges for them.' },
+    { q:'How much will it cost?',
+      a:'£9.99 for a single report is the planned price. The market leader charges around £20 for the same underlying data. Cheapest is not the aim; being clearly fairer than the big names is.' },
+    { q:'When does it go live?',
+      a:'When enough people press the button on this page. We refuse to buy data licences before real demand exists, and the button is how you register that demand. No email needed.' }
+  ];
+  return [
+  head('Full Vehicle History Check: Finance, Write-Off, Stolen',
+       'What a full vehicle history check adds to the free MOT report: outstanding finance, write-off category, stolen marker, keeper count and valuation. Planned at £9.99.',
+       SITE + '/history-check', faq),
+  '<main class="wrap">',
+  '<section class="hero" style="padding-top:44px">',
+  '<h1>The full history check, <span class="grad">stated honestly</span></h1>',
+  '<p class="sub">The free MOT check on this site reads everything DVSA publishes. Finance, write-off and stolen records are different: they live in licensed commercial and police databases. Here is exactly what a paid report would add, what it would cost, and a button that tells us you want it.</p>',
+  '</section>',
+  '<section>',
+  '<h2>Free check vs full report</h2>',
+  '<table><thead><tr><th>What you get</th><th>Free check</th><th>Full report</th></tr></thead><tbody>',
+  '<tr><td>MOT history, mileage trail, advisories, buyer score</td><td><strong>Yes, free forever</strong></td><td>Yes</td></tr>',
+  '<tr><td>ULEZ and clean air zone estimate</td><td>Yes</td><td>Yes</td></tr>',
+  '<tr><td>Outstanding recall flag</td><td>Yes</td><td>Yes</td></tr>',
+  '<tr><td>Outstanding finance (HP, PCP)</td><td>No</td><td><strong>Yes</strong></td></tr>',
+  '<tr><td>Insurance write-off category (A, B, S, N) and date</td><td>No</td><td><strong>Yes</strong></td></tr>',
+  '<tr><td>Police stolen marker</td><td>No</td><td><strong>Yes</strong></td></tr>',
+  '<tr><td>Scrapped, imported or exported status</td><td>No</td><td><strong>Yes</strong></td></tr>',
+  '<tr><td>Plate changes and number of keepers</td><td>No</td><td><strong>Yes</strong></td></tr>',
+  '<tr><td>Valuation</td><td>No</td><td><strong>Yes</strong></td></tr>',
+  '</tbody></table>',
+  '<h2>The price, decided before launch</h2>',
+  '<p><strong>£9.99 for a single report.</strong> The data behind it comes from the same licensed sources every provider uses; the market leader charges around £20 for it. We will not pretend it is cheaper to produce than it is, and we will not pad it with credit-style subscriptions you forget to cancel.</p>',
+  '<div class="card glass" style="text-align:center">',
+  '<h2 style="margin-top:0">Not live yet. Your click switches it on.</h2>',
+  '<p class="meta">We only license this data once enough people say they want it. Pressing the button records one anonymous vote and nothing else — no email, no card, no account.</p>',
+  '<p><button type="button" class="btn js-paid-intent">I would pay &pound;9.99 for this</button></p>',
+  '<p class="meta" id="paid-note" style="display:none"><strong>Counted, thank you.</strong> When enough votes land, this page becomes the real thing. Until then the <a href="/">free MOT check</a>, <a href="/scorecard">buyer score</a> and <a href="/recalls">recall check</a> cover everything public data can.</p>',
+  '</div>',
+  '<h2>Frequently asked</h2>',
+  faq.map(function(f){ return '<h3>' + esc(f.q) + '</h3><p>' + esc(f.a) + '</p>'; }).join(''),
+  '</section>',
+  '</main>',
+  footer(),
+  '<script src="/app.js" defer></' + 'script>'
+  ].join('');
+}
+
 /* ---- Roadmap item 2: recall check. No separate Recalls API needed — since 2023 DVSA
    includes hasOutstandingRecall (Yes/No/Unknown) in the MOT history response this site
    already fetches, fed daily by participating manufacturers and monthly by SMMT. The
@@ -800,6 +855,7 @@ const SITEMAP = [
   '<url><loc>' + SITE + '/scorecard</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
   '<url><loc>' + SITE + '/reminders</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
   '<url><loc>' + SITE + '/recalls</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
+  '<url><loc>' + SITE + '/history-check</loc><priority>0.7</priority><changefreq>monthly</changefreq></url>',
   '<url><loc>' + SITE + '/trade</loc><priority>0.6</priority><changefreq>monthly</changefreq></url>',
   '</urlset>'
 ].join('');
@@ -878,6 +934,7 @@ http.createServer(function(req, res){
   if(path === '/scorecard') return send(res, 200, 'text/html; charset=utf-8', scorecardPage(cleanReg(params.get('reg'))));
   if(path === '/reminders') return send(res, 200, 'text/html; charset=utf-8', remindersPage(cleanReg(params.get('reg'))));
   if(path === '/recalls') return send(res, 200, 'text/html; charset=utf-8', recallsPage(cleanReg(params.get('reg'))));
+  if(path === '/history-check') return send(res, 200, 'text/html; charset=utf-8', historyCheckPage());
   if(path === '/trade') return send(res, 200, 'text/html; charset=utf-8', tradePage());
 
   if(path.indexOf('/check/') === 0){

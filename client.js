@@ -357,6 +357,7 @@ function reportHtml(v, a){
      + '<button type="button" class="btn ghost js-share" data-reg="' + esc(reg) + '">Share this check</button>'
      + '<button type="button" class="btn ghost js-print">Print or save as PDF</button>'
      + '<a class="btn ghost" style="text-decoration:none" href="/compare?a=' + encodeURIComponent(reg) + '">Compare with another vehicle</a>'
+     + '<a class="btn ghost" style="text-decoration:none" href="/history-check">Finance &amp; write-off check</a>'
      + '</div>';
   h += '</section>';
   h += '<section class="card"><h3 style="margin-top:0">Full MOT history, ' + a.total + ' tests</h3>';
@@ -505,6 +506,12 @@ document.addEventListener('click', function(e){
     var reg = rc.getAttribute('data-reg');
     if($('#ra')){ if(!$('#ra').value) $('#ra').value = reg; else $('#rb').value = reg; return; }
     if($('#reg')){ $('#reg').value = reg; run(reg); }
+    return;
+  }
+  if(t.closest('.js-paid-intent')){
+    var pn = $('#paid-note'); if(pn) pn.style.display = 'block';
+    try{ if(window.__gaOn && window.gtag) window.gtag('event', 'paid_check_intent', {}); }catch(err){}
+    toast('Counted, thank you');
     return;
   }
   if(t.closest('.js-consent-yes')){ setConsent('yes'); return; }
