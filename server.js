@@ -12,6 +12,7 @@
     '/icon.svg': 1, '/favicon.svg': 1, '/favicon.ico': 1, '/og.png': 1, '/og.svg': 1,
     '/apple-touch-icon.png': 1, '/app.js': 1, '/api/mot': 1, '/ulez': 1, '/compare': 1,
     '/scorecard': 1, '/trade': 1, '/reminders': 1, '/recalls': 1, '/history-check': 1,
+    '/privacy': 1, '/data-sources': 1,
     '/check': 1, '/calendar': 1
   };
   var PREFIX = ['/check/', '/calendar/', '/guides'];
@@ -407,6 +408,7 @@ function footer(){
   '<p>Data covers England, Scotland and Wales. Northern Ireland MOTs are administered by the DVA and are not included. An MOT is a roadworthiness snapshot on the day of the test, not a mechanical warranty, and this site is general information rather than advice on any individual purchase.</p>',
   '<p><a href="/guides">MOT guides</a> &middot; <a href="/compare">Compare two vehicles</a> &middot; <a href="/reminders">MOT reminders</a> &middot; <a href="/recalls">Recall check</a> &middot; <a href="/history-check">Full history check</a> &middot; <a href="/">Run a check</a></p>',
   '<p>Something wrong, out of date, or a vehicle we got wrong? Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> and a person will read it.</p>',
+  '<p><a href="/data-sources">Where our data comes from</a> &middot; <a href="/privacy">Privacy policy</a></p>',
   '<p class="meta">Built by Ruhul Amin, Hertfordshire. Figures checked August 2026.</p>',
   '</div></footer></body></html>'
   ].join('');
@@ -619,6 +621,67 @@ function remindersPage(prefill){
   '</main>',
   footer(),
   '<script src="/app.js" defer></' + 'script>'
+  ].join('');
+}
+
+/* ---- Privacy policy. The site runs GA behind an opt-in banner, so this page is a
+   compliance requirement, not decoration. Every claim on it must stay true: registrations
+   are never stored in a database and never sent to analytics. ---- */
+function privacyPage(){
+  return [
+  head('Privacy Policy | MOT Check UK',
+       'What MOT Check UK does and does not do with your data: no accounts, no stored registrations, analytics only if you opt in, and your recent searches stay in your own browser.',
+       SITE + '/privacy', null),
+  '<main class="wrap">',
+  '<h1>Privacy policy</h1>',
+  '<p class="sub">The short version: this site has no accounts, stores no registrations in any database, and loads no analytics unless you press Allow. The long version follows, and all of it is true rather than boilerplate.</p>',
+  '<section>',
+  '<h2>Who runs this site</h2>',
+  '<p>MOT Check UK is run by Ruhul Amin, Hertfordshire, England. For anything on this page, email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> and a person will read it.</p>',
+  '<h2>Registrations you look up</h2>',
+  '<p>When you check a vehicle, the registration is sent to the DVSA MOT History API to fetch the record, and the response is cached in server memory for a few hours so repeated searches do not hit the DVSA quota. That cache clears when the server restarts. Registrations are never written to a database, never linked to you, and never sent to any analytics service.</p>',
+  '<h2>What stays in your own browser</h2>',
+  '<p>Your recent searches and your analytics choice are kept in your browser&rsquo;s local storage, on your device only. They never reach our server. The Clear button under the search box removes recent searches; clearing site data in your browser removes everything.</p>',
+  '<h2>Analytics, only if you allow it</h2>',
+  '<p>We use Google Analytics 4 to see which pages are useful. It loads only after you press Allow on the banner, in line with UK PECR. If you press No thanks, nothing loads and we remember the choice. Page views are sent with the registration stripped from the address, so what you looked up is not part of what Google receives. IP anonymisation is on. There are no advertising cookies on this site.</p>',
+  '<h2>Server logs</h2>',
+  '<p>Like every website, the server keeps standard short-lived access logs (IP address, path requested, time) used for rate limiting and abuse prevention, and for nothing else.</p>',
+  '<h2>Calendar reminders</h2>',
+  '<p>The MOT reminder file is generated at the moment you click and handed to your device. We keep no copy and take no email address.</p>',
+  '<h2>Your rights</h2>',
+  '<p>Under UK GDPR you can ask what personal data we hold about you (normally: none, unless you have emailed us), ask for it to be corrected or deleted, and complain to the <a href="https://ico.org.uk/" rel="noopener" target="_blank">Information Commissioner&rsquo;s Office</a>. Email the address above and it will be handled directly.</p>',
+  '<p class="meta">If a paid vehicle history product launches on this site, this policy will be updated before it takes a single payment, because that product would involve licensed third-party data and payment processing that the free site does not.</p>',
+  '</section>',
+  '</main>',
+  footer()
+  ].join('');
+}
+
+/* ---- Data sources page. E-E-A-T and the page journalists check before citing us. ---- */
+function dataSourcesPage(){
+  return [
+  head('Where Our Data Comes From | MOT Check UK',
+       'Every source behind MOT Check UK, named: the DVSA MOT History API under the Open Government Licence, recall flags fed by manufacturers and the SMMT, and what we do not have.',
+       SITE + '/data-sources', null),
+  '<main class="wrap">',
+  '<h1>Where our data comes from</h1>',
+  '<p class="sub">Every figure on this site has a named source. This page lists them, what they cover, and, just as importantly, what they do not.</p>',
+  '<section>',
+  '<h2>MOT history, mileage and advisories</h2>',
+  '<p>The <strong>DVSA MOT History API</strong>, the official Driver and Vehicle Standards Agency dataset, used under the Open Government Licence. It covers England, Scotland and Wales: cars, vans and motorcycles since 2005, and HGVs, trailers, buses and coaches from their own test regimes. Northern Ireland MOTs are administered by the DVA and are not included. We show the record as DVSA returns it; nothing is edited.</p>',
+  '<h2>Outstanding recall flag</h2>',
+  '<p>Also from the DVSA record. Many manufacturers supply DVSA with recall data daily; the rest is updated monthly through the SMMT, the manufacturers&rsquo; trade body. The flag says whether a recall is outstanding, not which one, and a clear flag is a good sign rather than a guarantee, because not every manufacturer supplies data yet. For detail we point at the official <a href="https://www.check-vehicle-recalls.service.gov.uk/recall-type/vehicle/make" rel="noopener" target="_blank">GOV.UK recall checker</a>.</p>',
+  '<h2>The buyer score and buyer report</h2>',
+  '<p>Our own arithmetic on the DVSA record, with the working shown: mileage consistency, gaps, failure rate, dangerous defects and repeated advisories. It is not a DVSA rating and not a mechanical inspection, and both the <a href="/scorecard">scorecard page</a> and every report say so.</p>',
+  '<h2>ULEZ and clean air zone estimates</h2>',
+  '<p>Estimated from the fuel type and first registration date in the DVSA record, because the actual Euro standard is not published in that dataset. We call it an estimate everywhere it appears and link the official <a href="https://tfl.gov.uk/modes/driving/check-your-vehicle/" rel="noopener" target="_blank">TfL checker</a> for the definitive answer.</p>',
+  '<h2>National statistics in our guides</h2>',
+  '<p>DVSA official statistics releases on GOV.UK, reproduced under the Open Government Licence with the test year stated. The full tables live in <a href="/guides/mot-statistics-uk">our MOT statistics guide</a>. <strong>Journalists and researchers are welcome to quote our tables with attribution</strong>; the underlying data is DVSA&rsquo;s and the licence is open.</p>',
+  '<h2>What we do not have</h2>',
+  '<p>Outstanding finance, insurance write-off categories, police stolen markers and keeper history are not public data. They sit in licensed commercial and police databases, and no free checker has them, whatever its marketing implies. What a paid report covering them would look like is set out honestly on <a href="/history-check">the full history check page</a>.</p>',
+  '</section>',
+  '</main>',
+  footer()
   ].join('');
 }
 
@@ -856,6 +919,8 @@ const SITEMAP = [
   '<url><loc>' + SITE + '/reminders</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
   '<url><loc>' + SITE + '/recalls</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>',
   '<url><loc>' + SITE + '/history-check</loc><priority>0.7</priority><changefreq>monthly</changefreq></url>',
+  '<url><loc>' + SITE + '/data-sources</loc><priority>0.4</priority><changefreq>monthly</changefreq></url>',
+  '<url><loc>' + SITE + '/privacy</loc><priority>0.3</priority><changefreq>yearly</changefreq></url>',
   '<url><loc>' + SITE + '/trade</loc><priority>0.6</priority><changefreq>monthly</changefreq></url>',
   '</urlset>'
 ].join('');
@@ -935,6 +1000,8 @@ http.createServer(function(req, res){
   if(path === '/reminders') return send(res, 200, 'text/html; charset=utf-8', remindersPage(cleanReg(params.get('reg'))));
   if(path === '/recalls') return send(res, 200, 'text/html; charset=utf-8', recallsPage(cleanReg(params.get('reg'))));
   if(path === '/history-check') return send(res, 200, 'text/html; charset=utf-8', historyCheckPage());
+  if(path === '/privacy') return send(res, 200, 'text/html; charset=utf-8', privacyPage());
+  if(path === '/data-sources') return send(res, 200, 'text/html; charset=utf-8', dataSourcesPage());
   if(path === '/trade') return send(res, 200, 'text/html; charset=utf-8', tradePage());
 
   if(path.indexOf('/check/') === 0){
