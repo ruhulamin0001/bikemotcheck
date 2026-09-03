@@ -12,7 +12,7 @@
     '/icon.svg': 1, '/favicon.svg': 1, '/favicon.ico': 1, '/og.png': 1, '/og.svg': 1,
     '/apple-touch-icon.png': 1, '/app.js': 1, '/api/mot': 1, '/ulez': 1, '/compare': 1,
     '/scorecard': 1, '/trade': 1, '/reminders': 1, '/recalls': 1, '/history-check': 1,
-    '/privacy': 1, '/data-sources': 1, '/api/checkout': 1, '/report': 1,
+    '/privacy': 1, '/data-sources': 1, '/api/checkout': 1, '/report': 1, '/terms': 1, '/refunds': 1,
     '/check': 1, '/calendar': 1
   };
   var PREFIX = ['/check/', '/calendar/', '/guides'];
@@ -74,7 +74,10 @@ const HISTORY_API_KEY = process.env.HISTORY_API_KEY || '';
    https://api.example.com/v1/check?vrm={REG} — set once the supplier account is live. */
 const HISTORY_ENDPOINT = process.env.HISTORY_ENDPOINT || '';
 const HISTORY_KEY_HEADER = process.env.HISTORY_KEY_HEADER || 'x-api-key';
-const PAY_ENABLED = !!(STRIPE_KEY && HISTORY_API_KEY && HISTORY_ENDPOINT);
+/* ICO registration is a legal precondition for processing keeper/finance data for money.
+   Requiring the number here makes it impossible to switch payments on without it. */
+const ICO_NUMBER = process.env.ICO_NUMBER || '';
+const PAY_ENABLED = !!(STRIPE_KEY && HISTORY_API_KEY && HISTORY_ENDPOINT && ICO_NUMBER);
 const PRICE_SINGLE_PENCE = 399;
 
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -757,6 +760,51 @@ function remindersPage(prefill){
   ].join('');
 }
 
+/* ---- Terms of sale + refund policy for the paid report. Live only while PAY_ENABLED,
+   because they describe a product that must not appear before its keys and ICO number
+   exist. Drafted from LEGAL-DRAFTS-PAID-LAUNCH.md. ---- */
+function termsPage(){
+  return [
+  head('Terms of Sale | MOT Check UK',
+       'Terms of sale for the paid vehicle history report on MOT Check UK: what you buy, the immediate-delivery consent, and our liability, in plain English.',
+       SITE + '/terms', null),
+  '<main class="wrap">',
+  '<h1>Terms of sale</h1>',
+  '<p class="sub">These cover the paid vehicle history report only. The free MOT checker has no terms to speak of: it is free, we store nothing, and we hope it is useful.</p>',
+  '<section>',
+  '<h2>Who you are buying from</h2>',
+  '<p>The paid report is sold by Ruhul Amin, trading as MOT Check UK, Hertfordshire, England. Contact: <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a>. ICO registration: ' + esc(ICO_NUMBER) + '.</p>',
+  '<h2>What you are buying</h2>',
+  '<p>A one-off digital report for the registration you enter, compiled at the moment of purchase from licensed third-party databases (outstanding finance, insurance write-off, stolen marker, keeper and plate history, valuation where available) together with the public DVSA MOT record.</p>',
+  '<h2>What the report is, and is not</h2>',
+  '<p>The report reflects the data held by those sources at the time of the check. It is not a guarantee of a vehicle&rsquo;s condition, history or title, and it does not replace a physical inspection or your own judgement. Data owners occasionally hold errors; where we are told of one, we will tell you.</p>',
+  '<h2>Your 14-day cancellation right, and why you waive it</h2>',
+  '<p>This is a digital product delivered immediately. Before payment you tick a box giving express consent to immediate delivery and acknowledging that you lose the statutory 14-day right to cancel once the report is delivered (Consumer Contracts Regulations 2013). Without that tick, the purchase does not proceed.</p>',
+  '<h2>Refunds</h2>',
+  '<p>Covered plainly on the <a href="/refunds">refund policy page</a>: if we cannot deliver your report, we refund.</p>',
+  '<h2>Liability</h2>',
+  '<p>Nothing here limits liability for fraud, or for death or personal injury caused by negligence. Otherwise our total liability for a report is limited to the price you paid for it.</p>',
+  '</section>',
+  '</main>', footer()
+  ].join('');
+}
+function refundsPage(){
+  return [
+  head('Refund Policy | MOT Check UK',
+       'The refund policy for the paid vehicle history report: if we cannot deliver your report, we refund. Plain English, no small print tricks.',
+       SITE + '/refunds', null),
+  '<main class="wrap">',
+  '<h1>Refund policy</h1>',
+  '<section>',
+  '<p><strong>We refund in full if we cannot deliver a report for your registration.</strong> That includes our data supplier failing to answer and the report page telling you so.</p>',
+  '<p>We do not refund because you did not like what the report said: the report is the product, whatever it reveals. And we cannot refund lookups where the data supplier has already charged us for a successfully returned answer.</p>',
+  '<p>If a report is wrong because we made an error, tell us: we will refund it and fix the error.</p>',
+  '<p>To claim, email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> with the address of your report page. A person reads it, usually the same day.</p>',
+  '</section>',
+  '</main>', footer()
+  ].join('');
+}
+
 /* ---- Privacy policy. The site runs GA behind an opt-in banner, so this page is a
    compliance requirement, not decoration. Every claim on it must stay true: registrations
    are never stored in a database and never sent to analytics. ---- */
@@ -781,9 +829,13 @@ function privacyPage(){
   '<p>Like every website, the server keeps standard short-lived access logs (IP address, path requested, time) used for rate limiting and abuse prevention, and for nothing else.</p>',
   '<h2>Calendar reminders</h2>',
   '<p>The MOT reminder file is generated at the moment you click and handed to your device. We keep no copy and take no email address.</p>',
+  (PAY_ENABLED ? [
+  '<h2>The paid history report</h2>',
+  '<p>When you buy a report, the registration you enter is sent to our licensed data supplier to compile it, and the delivered report is kept against your order so you can retrieve it from its address. Payment is handled by Stripe; we never see your card number. Our lawful basis is contract. We are registered with the Information Commissioner&rsquo;s Office, registration ' + esc(ICO_NUMBER) + '.</p>'
+  ].join('') : ''),
   '<h2>Your rights</h2>',
-  '<p>Under UK GDPR you can ask what personal data we hold about you (normally: none, unless you have emailed us), ask for it to be corrected or deleted, and complain to the <a href="https://ico.org.uk/" rel="noopener" target="_blank">Information Commissioner&rsquo;s Office</a>. Email the address above and it will be handled directly.</p>',
-  '<p class="meta">If a paid vehicle history product launches on this site, this policy will be updated before it takes a single payment, because that product would involve licensed third-party data and payment processing that the free site does not.</p>',
+  '<p>Under UK GDPR you can ask what personal data we hold about you (normally: none, unless you have emailed us' + (PAY_ENABLED ? ' or bought a report' : '') + '), ask for it to be corrected or deleted, and complain to the <a href="https://ico.org.uk/" rel="noopener" target="_blank">Information Commissioner&rsquo;s Office</a>. Email the address above and it will be handled directly.</p>',
+  (PAY_ENABLED ? '' : '<p class="meta">If a paid vehicle history product launches on this site, this policy will be updated before it takes a single payment, because that product would involve licensed third-party data and payment processing that the free site does not.</p>'),
   '</section>',
   '</main>',
   footer()
@@ -884,7 +936,7 @@ function historyCheckPage(){
   '</div>',
   '<p class="meta" style="margin-top:12px"><label><input type="checkbox" name="consent" value="yes" required> Deliver my report immediately. I understand that once it is delivered I lose my 14-day right to cancel this purchase.</label></p>',
   '</form>',
-  '<p class="meta">Payment is handled by Stripe. We never see your card number. If we cannot deliver a report for your registration, we refund.</p>',
+  '<p class="meta">Payment is handled by Stripe. We never see your card number. If we cannot deliver a report for your registration, <a href="/refunds">we refund</a>. Buying means agreeing to the <a href="/terms">terms of sale</a>.</p>',
   '<p class="meta">Three-report pack at &pound;11.99 is coming shortly; email <a href="mailto:support@adminruhulamin.co.uk">support</a> to be told when.</p>',
   '</div>'
   ].join('') : [
@@ -1205,6 +1257,14 @@ http.createServer(function(req, res){
       console.log('report error: ' + e.message);
       send(res, 502, 'text/plain; charset=utf-8', 'Could not verify the payment. Refresh in a moment.', 'no-store');
     });
+  }
+  if(path === '/terms'){
+    if(!PAY_ENABLED){ res.writeHead(302, { Location: '/history-check' }); return res.end(); }
+    return send(res, 200, 'text/html; charset=utf-8', termsPage());
+  }
+  if(path === '/refunds'){
+    if(!PAY_ENABLED){ res.writeHead(302, { Location: '/history-check' }); return res.end(); }
+    return send(res, 200, 'text/html; charset=utf-8', refundsPage());
   }
   if(path === '/privacy') return send(res, 200, 'text/html; charset=utf-8', privacyPage());
   if(path === '/data-sources') return send(res, 200, 'text/html; charset=utf-8', dataSourcesPage());
