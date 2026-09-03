@@ -12,7 +12,7 @@
     '/icon.svg': 1, '/favicon.svg': 1, '/favicon.ico': 1, '/og.png': 1, '/og.svg': 1,
     '/apple-touch-icon.png': 1, '/app.js': 1, '/api/mot': 1, '/ulez': 1, '/compare': 1,
     '/scorecard': 1, '/trade': 1, '/reminders': 1, '/recalls': 1, '/history-check': 1,
-    '/privacy': 1, '/data-sources': 1,
+    '/privacy': 1, '/data-sources': 1, '/api/checkout': 1, '/report': 1,
     '/check': 1, '/calendar': 1
   };
   var PREFIX = ['/check/', '/calendar/', '/guides'];
@@ -62,6 +62,20 @@ const SCOPE = process.env.DVSA_SCOPE;
 const SITE = 'https://bikemotcheckuk.cloud';
 const GSC = 'KhRBFVP7OVrVE72qDvl89_7zPquRjgVfkbOfVHh3Y6w';
 const BING = '5FFD67C969758EBF56D9070C84A31597';
+
+/* ---- Paid history check: payment + supplier config, all from the Hostinger env tab.
+   Modelled on SponsorJobUK's Stripe Checkout flow (session -> success_url -> verify),
+   adapted to one-time payments and this dependency-free server. The buy flow only
+   exists when BOTH keys are set; otherwise /history-check stays a register-interest
+   stub, because taking money without a data supply would be indefensible. ---- */
+const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || '';
+const HISTORY_API_KEY = process.env.HISTORY_API_KEY || '';
+/* Full supplier URL with {REG} where the registration goes, e.g.
+   https://api.example.com/v1/check?vrm={REG} — set once the supplier account is live. */
+const HISTORY_ENDPOINT = process.env.HISTORY_ENDPOINT || '';
+const HISTORY_KEY_HEADER = process.env.HISTORY_KEY_HEADER || 'x-api-key';
+const PAY_ENABLED = !!(STRIPE_KEY && HISTORY_API_KEY && HISTORY_ENDPOINT);
+const PRICE_SINGLE_PENCE = 399;
 
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function cleanReg(s){ return String(s==null?'':s).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12); }
@@ -154,6 +168,117 @@ function lookup(reg){
     if (r.status === 401 || r.status === 403) { tokenValue = null; tokenExpiry = 0; }
     return { error: 'The DVSA service returned an error (' + r.status + '). Please try again shortly.', transient: true };
   });
+}
+
+/* ---- Stripe REST helpers (no SDK; this server has zero npm dependencies) ---- */
+function stripeReq(method, apiPath, params){
+  return new Promise(function(resolve, reject){
+    var body = params ? Object.keys(params).map(function(k){
+      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    }).join('&') : '';
+    var req = https.request({
+      hostname: 'api.stripe.com', path: apiPath, method: method,
+      headers: {
+        'Authorization': 'Bearer ' + STRIPE_KEY,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(body)
+      }
+    }, function(res){
+      var chunks = [];
+      res.on('data', function(c){ chunks.push(c); });
+      res.on('end', function(){
+        try { resolve({ status: res.statusCode, json: JSON.parse(Buffer.concat(chunks).toString('utf8')) }); }
+        catch(e){ reject(new Error('stripe parse: ' + e.message)); }
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(20000, function(){ req.destroy(new Error('stripe timeout')); });
+    req.end(body);
+  });
+}
+
+/* One checkout session per purchase; the reg travels in metadata and comes back
+   when /report verifies the session. Same shape as SponsorJobUK's flow. */
+function createCheckout(reg){
+  return stripeReq('POST', '/v1/checkout/sessions', {
+    'mode': 'payment',
+    'line_items[0][quantity]': '1',
+    'line_items[0][price_data][currency]': 'gbp',
+    'line_items[0][price_data][unit_amount]': String(PRICE_SINGLE_PENCE),
+    'line_items[0][price_data][product_data][name]': 'Full vehicle history report: ' + reg,
+    'line_items[0][price_data][product_data][description]': 'Finance, write-off, stolen and keeper data plus the full MOT history. Launch price.',
+    'metadata[reg]': reg,
+    'metadata[consent_immediate]': 'yes',
+    'success_url': SITE + '/report?session_id={CHECKOUT_SESSION_ID}',
+    'cancel_url': SITE + '/history-check?checkout=cancelled'
+  });
+}
+
+/* Paid supplier lookup. Generic by design: the endpoint template and key header come
+   from the env, and the report renders whatever JSON comes back, so switching between
+   suppliers (or refining the mapping once their docs are in hand) is config, not code. */
+function fetchHistory(reg){
+  return new Promise(function(resolve, reject){
+    var u = new URL(HISTORY_ENDPOINT.replace('{REG}', encodeURIComponent(reg)));
+    var headers = { 'Accept': 'application/json' };
+    headers[HISTORY_KEY_HEADER] = HISTORY_API_KEY;
+    var req = https.request({ hostname: u.hostname, path: u.pathname + u.search, method: 'GET', headers: headers }, function(res){
+      var chunks = [];
+      res.on('data', function(c){ chunks.push(c); });
+      res.on('end', function(){
+        try { resolve({ status: res.statusCode, json: JSON.parse(Buffer.concat(chunks).toString('utf8')) }); }
+        catch(e){ resolve({ status: res.statusCode, json: null }); }
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(25000, function(){ req.destroy(new Error('supplier timeout')); });
+    req.end();
+  });
+}
+
+/* Paid reports cached in memory against the Stripe session id, so refreshing the
+   success page does not re-bill the supplier. Restart loses the cache; /report
+   re-fetches against the same paid session, which costs one supplier lookup. */
+var paidReports = {};
+function flattenJson(obj, prefix, rows, depth){
+  if (depth > 3 || rows.length > 200) return rows;
+  for (var k in obj){
+    var v = obj[k];
+    var label = prefix ? prefix + ' › ' + k : k;
+    if (v === null || v === undefined) continue;
+    if (typeof v === 'object' && !Array.isArray(v)) flattenJson(v, label, rows, depth + 1);
+    else if (Array.isArray(v)){
+      if (v.length && typeof v[0] === 'object') { for (var i = 0; i < Math.min(v.length, 10); i++) flattenJson(v[i], label + ' ' + (i+1), rows, depth + 1); }
+      else rows.push([label, v.join(', ').slice(0, 300)]);
+    }
+    else rows.push([label, String(v).slice(0, 300)]);
+  }
+  return rows;
+}
+function reportPage(reg, supplierJson){
+  var rows = flattenJson(supplierJson || {}, '', [], 0);
+  var table = rows.length
+    ? '<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>' +
+      rows.map(function(r){ return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>'; }).join('') +
+      '</tbody></table>'
+    : '<p class="meta">The supplier returned no structured data for this registration. Email us and we will refund the report.</p>';
+  return [
+  head('Full history report: ' + reg + ' | MOT Check UK',
+       'Paid vehicle history report.', SITE + '/history-check', null)
+    .replace('<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1">',
+             '<meta name="robots" content="noindex,nofollow">'),
+  '<main class="wrap">',
+  '<h1>Full history report: ' + esc(reg) + '</h1>',
+  '<p class="sub">This report reflects the data held by our licensed sources at the moment of purchase. It is not a guarantee and does not replace a physical inspection. Keep this page&rsquo;s address to return to the report.</p>',
+  '<section class="card">', table, '</section>',
+  '<section class="card glass">',
+  '<h2 style="margin-top:0">The free half of your report</h2>',
+  '<p class="meta">The full MOT history, mileage chart, buyer score and recall flag for ' + esc(reg) + ' are on the free checker, no purchase needed:</p>',
+  '<p><a class="btn" style="text-decoration:none" href="/check/' + encodeURIComponent(reg) + '">Open the MOT report for ' + esc(reg) + '</a></p>',
+  '</section>',
+  '<p class="meta">Something wrong with this report? Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> with this page&rsquo;s address. If we cannot deliver your data, we refund.</p>',
+  '</main>', footer()
+  ].join('');
 }
 
 function pad(n){ return n < 10 ? '0' + n : String(n); }
@@ -747,12 +872,29 @@ function historyCheckPage(){
   '<div class="n">For comparing shortlisted vehicles, 90-day credits</div>',
   '</div>',
   '</div>',
+  (PAY_ENABLED ? [
+  '<div class="card glass">',
+  '<h2 style="margin-top:0">Buy a single report &mdash; &pound;3.99</h2>',
+  '<form method="get" action="/api/checkout">',
+  '<input type="hidden" name="plan" value="single">',
+  '<div class="search" style="justify-content:flex-start">',
+  '<label class="plate" style="flex:1 1 260px"><span class="gb"><b>&#9733;</b>GB</span>',
+  '<input name="reg" placeholder="AB12 CDE" aria-label="Vehicle registration" spellcheck="false" autocapitalize="characters" required></label>',
+  '<button class="btn" type="submit">Buy the report &mdash; &pound;3.99</button>',
+  '</div>',
+  '<p class="meta" style="margin-top:12px"><label><input type="checkbox" name="consent" value="yes" required> Deliver my report immediately. I understand that once it is delivered I lose my 14-day right to cancel this purchase.</label></p>',
+  '</form>',
+  '<p class="meta">Payment is handled by Stripe. We never see your card number. If we cannot deliver a report for your registration, we refund.</p>',
+  '<p class="meta">Three-report pack at &pound;11.99 is coming shortly; email <a href="mailto:support@adminruhulamin.co.uk">support</a> to be told when.</p>',
+  '</div>'
+  ].join('') : [
   '<div class="card glass" style="text-align:center">',
   '<h2 style="margin-top:0">Not live yet. Your click switches it on.</h2>',
   '<p class="meta">We only license this data once enough people say they want it. Pressing the button records one anonymous vote and nothing else — no email, no card, no account. Launch pricing will be honoured when it goes live.</p>',
   '<p><button type="button" class="btn js-paid-intent">I would pay &pound;3.99 for this</button></p>',
   '<p class="meta" id="paid-note" style="display:none"><strong>Counted, thank you.</strong> When enough votes land, this page becomes the real thing at the launch price above. Until then the <a href="/">free MOT check</a>, <a href="/scorecard">buyer score</a> and <a href="/recalls">recall check</a> cover everything public data can.</p>',
-  '</div>',
+  '</div>'
+  ].join('')),
   '<h2>Frequently asked</h2>',
   faq.map(function(f){ return '<h3>' + esc(f.q) + '</h3><p>' + esc(f.a) + '</p>'; }).join(''),
   '</section>',
@@ -926,7 +1068,7 @@ const MANIFEST = JSON.stringify({
 const INDEXNOW_KEY = '7c4f9a2be85d41d0ab63f1e770c9d284';
 
 const ROBOTS = [
-  'User-agent: *', 'Allow: /', 'Disallow: /api/', 'Disallow: /calendar/', '',
+  'User-agent: *', 'Allow: /', 'Disallow: /api/', 'Disallow: /calendar/', 'Disallow: /report', '',
   'Sitemap: ' + SITE + '/sitemap.xml',
   'Sitemap: ' + SITE + '/guides/sitemap.xml', ''
 ].join('\n');
@@ -1022,6 +1164,48 @@ http.createServer(function(req, res){
   if(path === '/reminders') return send(res, 200, 'text/html; charset=utf-8', remindersPage(cleanReg(params.get('reg'))));
   if(path === '/recalls') return send(res, 200, 'text/html; charset=utf-8', recallsPage(cleanReg(params.get('reg'))));
   if(path === '/history-check') return send(res, 200, 'text/html; charset=utf-8', historyCheckPage());
+
+  if(path === '/api/checkout'){
+    if(!PAY_ENABLED){ res.writeHead(302, { Location: '/history-check' }); return res.end(); }
+    var breg = cleanReg(params.get('reg'));
+    if(breg.length < 2 || params.get('consent') !== 'yes'){ res.writeHead(302, { Location: '/history-check?checkout=missing' }); return res.end(); }
+    var bip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+    if(!allowed('buy:' + bip)) return send(res, 429, 'text/plain; charset=utf-8', 'Too many attempts. Please try again later.', 'no-store');
+    return createCheckout(breg).then(function(r){
+      if(r.status === 200 && r.json && r.json.url){ res.writeHead(303, { Location: r.json.url }); return res.end(); }
+      console.log('checkout failed: ' + (r.json && r.json.error ? r.json.error.message : r.status));
+      res.writeHead(302, { Location: '/history-check?checkout=failed' }); res.end();
+    }).catch(function(e){
+      console.log('checkout error: ' + e.message);
+      res.writeHead(302, { Location: '/history-check?checkout=failed' }); res.end();
+    });
+  }
+
+  if(path === '/report'){
+    if(!PAY_ENABLED){ res.writeHead(302, { Location: '/history-check' }); return res.end(); }
+    var sid = String(params.get('session_id') || '');
+    if(!/^cs_[A-Za-z0-9_]+$/.test(sid)) return send(res, 400, 'text/plain; charset=utf-8', 'Bad session.', 'no-store');
+    if(paidReports[sid]) return send(res, 200, 'text/html; charset=utf-8', paidReports[sid], 'no-store');
+    return stripeReq('GET', '/v1/checkout/sessions/' + sid, null).then(function(r){
+      if(r.status !== 200 || !r.json || r.json.payment_status !== 'paid'){
+        return send(res, 402, 'text/html; charset=utf-8', head('Payment not completed | MOT Check UK', 'Payment not completed.', SITE + '/history-check', null) + '<main class="wrap"><h1>Payment not completed</h1><p>This checkout was not paid, so there is no report to show. <a href="/history-check">Start again</a>.</p></main>' + footer(), 'no-store');
+      }
+      var preg = cleanReg((r.json.metadata && r.json.metadata.reg) || '');
+      return fetchHistory(preg).then(function(h){
+        if(h.status !== 200 || !h.json){
+          console.log('supplier failed for paid session ' + sid + ': http ' + h.status);
+          return send(res, 200, 'text/html; charset=utf-8', head('Report delayed | MOT Check UK', 'Report delayed.', SITE + '/history-check', null) + '<main class="wrap"><h1>Your report is delayed</h1><p>Your payment for ' + esc(preg) + ' succeeded but our data supplier did not answer. Refresh this page in a minute; if it still fails, email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> with this page&rsquo;s address and we will deliver it or refund you.</p></main>' + footer(), 'no-store');
+        }
+        var page = reportPage(preg, h.json);
+        paidReports[sid] = page;
+        var pk = Object.keys(paidReports); if(pk.length > 500){ delete paidReports[pk[0]]; }
+        send(res, 200, 'text/html; charset=utf-8', page, 'no-store');
+      });
+    }).catch(function(e){
+      console.log('report error: ' + e.message);
+      send(res, 502, 'text/plain; charset=utf-8', 'Could not verify the payment. Refresh in a moment.', 'no-store');
+    });
+  }
   if(path === '/privacy') return send(res, 200, 'text/html; charset=utf-8', privacyPage());
   if(path === '/data-sources') return send(res, 200, 'text/html; charset=utf-8', dataSourcesPage());
   if(path === '/trade') return send(res, 200, 'text/html; charset=utf-8', tradePage());
