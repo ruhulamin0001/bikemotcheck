@@ -261,13 +261,153 @@ function flattenJson(obj, prefix, rows, depth){
   }
   return rows;
 }
+/* A buyer paying for this wants four answers in the first screen, not a field dump:
+   is there finance on it, has it been written off, is it stolen, is the identity clean.
+   Everything else is supporting detail. Written against the AutoCheck response shape
+   (result.finance_data_items etc); any other supplier shape falls through to the
+   generic table, so a supplier switch degrades rather than breaks. */
+function ymd(d){
+  if (!d) return '';
+  var t = Date.parse(d);
+  if (!t) return String(d).slice(0, 10);
+  var x = new Date(t);
+  return x.getUTCDate() + ' ' + MONTHS_LONG[x.getUTCMonth()] + ' ' + x.getUTCFullYear();
+}
+var MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function verdictCard(cls, title, lines){
+  return '<div class="flag"><span class="dot d-' + cls + '"></span><div><strong style="font-size:17px">' + esc(title) + '</strong>' +
+    lines.map(function(l){ return '<p class="meta" style="margin:4px 0 0">' + l + '</p>'; }).join('') + '</div></div>';
+}
+function paidVerdicts(r){
+  var out = [], red = 0;
+
+  var fin = r.finance_data_items || [];
+  if (fin.length){
+    red++;
+    out.push(verdictCard('red', 'Outstanding finance recorded', fin.map(function(f){
+      return esc([f.agreement_type, f.finance_company].filter(Boolean).join(' with ')) +
+        (f.agreement_date ? ', started ' + esc(ymd(f.agreement_date)) : '') +
+        (f.agreement_term_months ? ' over ' + esc(String(f.agreement_term_months)) + ' months' : '') +
+        (f.agreement_number ? '. Agreement ' + esc(f.agreement_number) : '') +
+        (f.contact_number ? '. Lender contact ' + esc(f.contact_number) : '');
+    }).concat(['<strong>What this means:</strong> the lender may still legally own this vehicle. Do not pay the seller until they show the finance is settled, in writing, from the lender.'])));
+  } else {
+    out.push(verdictCard('green', 'No outstanding finance recorded', ['No live finance agreement is recorded against this registration at the time of this check.']));
+  }
+
+  var cond = r.condition_data_items || [];
+  if (cond.length){
+    red++;
+    out.push(verdictCard('red', 'Recorded as an insurance write-off', cond.map(function(c){
+      return '<strong>' + esc(c.loss_type || 'Write-off') + '</strong>' +
+        (c.date_of_loss ? ', loss dated ' + esc(ymd(c.date_of_loss)) : '') +
+        (c.insurer_name ? ', insurer ' + esc(c.insurer_name) : '') +
+        (c.insurer_claim_number ? ', claim ' + esc(c.insurer_claim_number) : '');
+    }).concat(['<strong>What this means:</strong> an insurer once judged this vehicle a total loss. Category S and N cars can be repaired and legally sold, but they are worth notably less and the repair quality is the whole question. Read <a href="/guides/car-write-off-categories-uk">what the categories mean</a>.'])));
+  } else {
+    out.push(verdictCard('green', 'No insurance write-off recorded', ['No total-loss or salvage category is recorded against this registration.']));
+  }
+
+  var stolen = r.stolen_vehicle_data_items || [];
+  if (stolen.length){
+    red++;
+    out.push(verdictCard('red', 'Recorded as stolen', stolen.map(function(s){
+      return (s.date_reported ? 'Reported ' + esc(ymd(s.date_reported)) : 'Theft marker recorded') +
+        (s.police_force ? ', ' + esc(s.police_force) : '') + '. <strong>Do not buy this vehicle. Contact the police.</strong>';
+    })));
+  } else {
+    out.push(verdictCard('green', 'Not recorded as stolen', ['No police theft marker is recorded against this registration.']));
+  }
+
+  var risk = r.high_risk_data_items || [];
+  if (risk.length){
+    red++;
+    out.push(verdictCard('red', 'High-risk marker recorded', risk.map(function(x){
+      return esc([x.reason, x.company_name].filter(Boolean).join(' — ') || 'A third party has registered an interest in this vehicle') +
+        (x.date_of_interest ? ', ' + esc(ymd(x.date_of_interest)) : '');
+    }).concat(['Someone has registered an interest in this vehicle, which can mean a dispute, a logbook loan or a security marker. Ask the seller directly about it.'])));
+  }
+
+  if (r.is_scrapped){
+    red++;
+    out.push(verdictCard('red', 'Recorded as scrapped', [
+      (r.scrapped_date ? 'Scrapped ' + esc(ymd(r.scrapped_date)) + '. ' : '') +
+      (r.certificate_of_destruction_issued ? 'A certificate of destruction was issued, so this vehicle must never return to the road.' : 'A scrapped marker means this vehicle was notified to DVLA as destroyed.')]));
+  }
+
+  if (r.is_imported || r.is_exported || r.was_exported){
+    out.push(verdictCard('amber', (r.is_imported ? 'Imported vehicle' : 'Export recorded'), [
+      (r.is_imported ? 'Imported' + (r.imported_date ? ' ' + esc(ymd(r.imported_date)) : '') + (r.is_non_eu_import ? ' from outside the EU' : '') + '. Imports can have different specification, and service history is often harder to trace.' : '') +
+      ((r.is_exported || r.was_exported) ? ' An export marker is recorded' + (r.exported_date ? ' (' + esc(ymd(r.exported_date)) + ')' : '') + '. Ask why the vehicle is back, or still, in the UK.' : '')]));
+  }
+
+  return { html: out.join(''), red: red };
+}
+function paidDetailRows(r){
+  var rows = [];
+  var kd = (r.keeper_data_items || [])[0] || {};
+  if (r.keeper_changes_qty != null || kd.number_previous_keepers != null)
+    rows.push(['Previous keepers', String(kd.number_previous_keepers != null ? kd.number_previous_keepers : r.keeper_changes_qty) +
+      (kd.date_of_last_keeper_change ? ', last change ' + ymd(kd.date_of_last_keeper_change) : '')]);
+  if (r.cherished_data_qty) {
+    var pl = (r.cherished_data_items || []).map(function(c){
+      return (c.previous_vehicle_registration_mark ? 'was ' + c.previous_vehicle_registration_mark : 'plate transfer') +
+        (c.date_of_transfer ? ' until ' + ymd(c.date_of_transfer) : '');
+    }).join('; ');
+    rows.push(['Registration changes', String(r.cherished_data_qty) + (pl ? ' — ' + pl : '')]);
+  }
+  if (r.colour_changes_qty) rows.push(['Colour changes', String(r.colour_changes_qty) + (r.original_colour ? ', originally ' + r.original_colour : '')]);
+  var v5 = (r.v5c_data_items || []).map(function(v){ return ymd(v.date_v5c_issued); }).filter(Boolean);
+  if (v5.length) rows.push(['V5C logbooks issued', v5.join(', ')]);
+  var ps = (r.previous_search_items || []).length;
+  if (ps) rows.push(['Previous trade searches', String(ps) + ' recorded, most recent ' + ymd((r.previous_search_items[0] || {}).date_of_search)]);
+  return rows;
+}
+function paidIdentityRows(r){
+  var rows = [];
+  var id = [r.dvla_manufacturer_desc, r.dvla_model_desc].filter(Boolean).join(' ');
+  if (id) rows.push(['Make and model', id]);
+  if (r.colour) rows.push(['Colour', r.colour + (r.original_colour && r.original_colour !== r.colour ? ' (originally ' + r.original_colour + ')' : '')]);
+  if (r.dvla_fuel_desc) rows.push(['Fuel', r.dvla_fuel_desc]);
+  if (r.engine_capacity_cc) rows.push(['Engine', String(r.engine_capacity_cc) + 'cc']);
+  if (r.dvla_body_desc) rows.push(['Body', r.dvla_body_desc]);
+  if (r.first_registration_date) rows.push(['First registered', ymd(r.first_registration_date)]);
+  if (r.vehicle_identification_number) rows.push(['VIN', r.vehicle_identification_number]);
+  return rows;
+}
+function rowsTable(rows){
+  if (!rows.length) return '';
+  return '<table><tbody>' + rows.map(function(r){
+    return '<tr><th style="width:38%">' + esc(r[0]) + '</th><td>' + esc(r[1]) + '</td></tr>';
+  }).join('') + '</tbody></table>';
+}
 function reportPage(reg, supplierJson){
-  var rows = flattenJson(supplierJson || {}, '', [], 0);
-  var table = rows.length
-    ? '<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>' +
-      rows.map(function(r){ return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>'; }).join('') +
-      '</tbody></table>'
-    : '<p class="meta">The supplier returned no structured data for this registration. Email us and we will refund the report.</p>';
+  var j = supplierJson || {};
+  var r = j.result && typeof j.result === 'object' ? j.result : null;
+  var body;
+  if (r){
+    var v = paidVerdicts(r);
+    var headline = v.red
+      ? '<p class="v bad" style="font-size:21px;font-weight:800;margin:0 0 4px">' + v.red + ' thing' + (v.red > 1 ? 's' : '') + ' to deal with before you buy</p><p class="meta" style="margin:0">Read the red items below. Each one is a question for the seller, not automatically a reason to walk away.</p>'
+      : '<p class="v ok" style="font-size:21px;font-weight:800;margin:0 0 4px">Nothing recorded against this vehicle</p><p class="meta" style="margin:0">No finance, write-off, theft or scrap marker was found. That is the answer most buyers are paying to hear.</p>';
+    var detail = rowsTable(paidDetailRows(r));
+    var ident = rowsTable(paidIdentityRows(r));
+    body = '<section class="card">' + headline + '<div style="margin-top:14px">' + v.html + '</div></section>' +
+      (detail ? '<section class="card"><h2 style="margin-top:0">History detail</h2>' + detail + '</section>' : '') +
+      (ident ? '<section class="card"><h2 style="margin-top:0">Vehicle identity</h2>' + ident +
+        '<p class="meta">Check these against the V5C logbook and the car in front of you. A mismatch is the oldest warning sign there is.</p></section>' : '') +
+      '<section class="card"><details><summary style="cursor:pointer;font-weight:700">Every field our supplier returned</summary>' +
+      '<p class="meta">The raw record, for completeness.</p>' +
+      '<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>' +
+      flattenJson(j, '', [], 0).map(function(x){ return '<tr><td>' + esc(x[0]) + '</td><td>' + esc(x[1]) + '</td></tr>'; }).join('') +
+      '</tbody></table></details></section>';
+  } else {
+    var rows = flattenJson(j, '', [], 0);
+    body = '<section class="card">' + (rows.length
+      ? '<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>' +
+        rows.map(function(x){ return '<tr><td>' + esc(x[0]) + '</td><td>' + esc(x[1]) + '</td></tr>'; }).join('') + '</tbody></table>'
+      : '<p class="meta">The supplier returned no structured data for this registration. Email us and we will refund the report.</p>') + '</section>';
+  }
   return [
   head('Full history report: ' + reg + ' | MOT Check UK',
        'Paid vehicle history report.', SITE + '/history-check', null)
@@ -276,7 +416,7 @@ function reportPage(reg, supplierJson){
   '<main class="wrap">',
   '<h1>Full history report: ' + esc(reg) + '</h1>',
   '<p class="sub">This report reflects the data held by our licensed sources at the moment of purchase. It is not a guarantee and does not replace a physical inspection. Keep this page&rsquo;s address to return to the report.</p>',
-  '<section class="card">', table, '</section>',
+  body,
   '<section class="card glass">',
   '<h2 style="margin-top:0">The free half of your report</h2>',
   '<p class="meta">The full MOT history, mileage chart, buyer score and recall flag for ' + esc(reg) + ' are on the free checker, no purchase needed:</p>',
@@ -1247,9 +1387,16 @@ http.createServer(function(req, res){
         return send(res, 402, 'text/html; charset=utf-8', head('Payment not completed | MOT Check UK', 'Payment not completed.', SITE + '/history-check', null) + '<main class="wrap"><h1>Payment not completed</h1><p>This checkout was not paid, so there is no report to show. <a href="/history-check">Start again</a>.</p></main>' + footer(), 'no-store');
       }
       var preg = cleanReg((r.json.metadata && r.json.metadata.reg) || '');
-      return fetchHistory(preg).then(function(h){
+      /* Payment already succeeded by this point. A supplier problem must NEVER surface as
+         "we could not verify your payment" — that reads as if the money vanished. Catch it
+         here, before the outer catch, and answer with the deliver-or-refund page. */
+      return fetchHistory(preg).catch(function(e){
+        console.log('supplier unreachable for paid session ' + sid + ': ' +
+          ([(e && e.message), (e && e.code), (e && e.name)].filter(Boolean).join(' / ') || String(e)));
+        return { status: 0, json: null };
+      }).then(function(h){
         if(h.status !== 200 || !h.json){
-          console.log('supplier failed for paid session ' + sid + ': http ' + h.status);
+          console.log('supplier failed for paid session ' + sid + ': http ' + h.status + ' reg ' + preg + ' json=' + (h.json ? 'yes' : 'no'));
           return send(res, 200, 'text/html; charset=utf-8', head('Report delayed | MOT Check UK', 'Report delayed.', SITE + '/history-check', null) + '<main class="wrap"><h1>Your report is delayed</h1><p>Your payment for ' + esc(preg) + ' succeeded but our data supplier did not answer. Refresh this page in a minute; if it still fails, email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> with this page&rsquo;s address and we will deliver it or refund you.</p></main>' + footer(), 'no-store');
         }
         var page = reportPage(preg, h.json);
@@ -1258,7 +1405,11 @@ http.createServer(function(req, res){
         send(res, 200, 'text/html; charset=utf-8', page, 'no-store');
       });
     }).catch(function(e){
-      console.log('report error: ' + e.message);
+      /* This fires on a PAID session, so a silent log is money lost with no trail.
+         Node network errors often carry a code and an empty message, which is exactly
+         what made the first local test unreadable. Print everything we have. */
+      console.log('report error for session ' + sid + ': ' +
+        [(e && e.message), (e && e.code), (e && e.name)].filter(Boolean).join(' / ') || String(e));
       send(res, 502, 'text/plain; charset=utf-8', 'Could not verify the payment. Refresh in a moment.', 'no-store');
     });
   }
