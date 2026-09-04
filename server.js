@@ -74,10 +74,13 @@ const HISTORY_API_KEY = process.env.HISTORY_API_KEY || '';
    https://api.example.com/v1/check?vrm={REG} — set once the supplier account is live. */
 const HISTORY_ENDPOINT = process.env.HISTORY_ENDPOINT || '';
 const HISTORY_KEY_HEADER = process.env.HISTORY_KEY_HEADER || 'x-api-key';
-/* ICO registration is a legal precondition for processing keeper/finance data for money.
-   Requiring the number here makes it impossible to switch payments on without it. */
+/* ICO registration is a legal precondition for processing keeper/finance data for money,
+   so a LIVE Stripe key without an ICO number leaves payments switched off. A Stripe TEST
+   key moves no real money and takes no real customer's data, so the whole flow can be
+   rehearsed before the ICO registration lands. */
 const ICO_NUMBER = process.env.ICO_NUMBER || '';
-const PAY_ENABLED = !!(STRIPE_KEY && HISTORY_API_KEY && HISTORY_ENDPOINT && ICO_NUMBER);
+const STRIPE_TEST_MODE = STRIPE_KEY.indexOf('sk_test_') === 0;
+const PAY_ENABLED = !!(STRIPE_KEY && HISTORY_API_KEY && HISTORY_ENDPOINT && (ICO_NUMBER || STRIPE_TEST_MODE));
 const PRICE_SINGLE_PENCE = 399;
 
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -773,7 +776,7 @@ function termsPage(){
   '<p class="sub">These cover the paid vehicle history report only. The free MOT checker has no terms to speak of: it is free, we store nothing, and we hope it is useful.</p>',
   '<section>',
   '<h2>Who you are buying from</h2>',
-  '<p>The paid report is sold by Ruhul Amin, trading as MOT Check UK, Hertfordshire, England. Contact: <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a>. ICO registration: ' + esc(ICO_NUMBER) + '.</p>',
+  '<p>The paid report is sold by Ruhul Amin, trading as MOT Check UK, Hertfordshire, England. Contact: <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a>.' + (ICO_NUMBER ? ' ICO registration: ' + esc(ICO_NUMBER) + '.' : '') + '</p>',
   '<h2>What you are buying</h2>',
   '<p>A one-off digital report for the registration you enter, compiled at the moment of purchase from licensed third-party databases (outstanding finance, insurance write-off, stolen marker, keeper and plate history, valuation where available) together with the public DVSA MOT record.</p>',
   '<h2>What the report is, and is not</h2>',
@@ -831,7 +834,7 @@ function privacyPage(){
   '<p>The MOT reminder file is generated at the moment you click and handed to your device. We keep no copy and take no email address.</p>',
   (PAY_ENABLED ? [
   '<h2>The paid history report</h2>',
-  '<p>When you buy a report, the registration you enter is sent to our licensed data supplier to compile it, and the delivered report is kept against your order so you can retrieve it from its address. Payment is handled by Stripe; we never see your card number. Our lawful basis is contract. We are registered with the Information Commissioner&rsquo;s Office, registration ' + esc(ICO_NUMBER) + '.</p>'
+  '<p>When you buy a report, the registration you enter is sent to our licensed data supplier to compile it, and the delivered report is kept against your order so you can retrieve it from its address. Payment is handled by Stripe; we never see your card number. Our lawful basis is contract.' + (ICO_NUMBER ? ' We are registered with the Information Commissioner&rsquo;s Office, registration ' + esc(ICO_NUMBER) + '.' : '') + '</p>'
   ].join('') : ''),
   '<h2>Your rights</h2>',
   '<p>Under UK GDPR you can ask what personal data we hold about you (normally: none, unless you have emailed us' + (PAY_ENABLED ? ' or bought a report' : '') + '), ask for it to be corrected or deleted, and complain to the <a href="https://ico.org.uk/" rel="noopener" target="_blank">Information Commissioner&rsquo;s Office</a>. Email the address above and it will be handled directly.</p>',
@@ -926,6 +929,7 @@ function historyCheckPage(){
   '</div>',
   (PAY_ENABLED ? [
   '<div class="card glass">',
+  (STRIPE_TEST_MODE ? '<p class="flag" style="border:2px solid var(--warn);border-radius:12px;padding:12px 14px"><strong>Test mode.</strong> This checkout is connected to Stripe&rsquo;s test environment while we finish setting up. Real cards are declined and no money is taken. Please come back shortly.</p>' : ''),
   '<h2 style="margin-top:0">Buy a single report &mdash; &pound;3.99</h2>',
   '<form method="get" action="/api/checkout">',
   '<input type="hidden" name="plan" value="single">',
