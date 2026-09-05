@@ -246,12 +246,17 @@ function fetchHistory(reg){
    success page does not re-bill the supplier. Restart loses the cache; /report
    re-fetches against the same paid session, which costs one supplier lookup. */
 var paidReports = {};
+/* Supplier licences forbid showing a consumer the full VIN, and forbid exposing the raw
+   API response. Both are stripped at the one choke point every rendered row passes through,
+   so no future renderer can leak them by accident. */
+var REDACT = /(^|_)vin($|_)|identification_number|api[_-]?key|secret|token|password/i;
 function flattenJson(obj, prefix, rows, depth){
   if (depth > 3 || rows.length > 200) return rows;
   for (var k in obj){
     var v = obj[k];
     var label = prefix ? prefix + ' › ' + k : k;
     if (v === null || v === undefined) continue;
+    if (REDACT.test(k)) continue;
     if (typeof v === 'object' && !Array.isArray(v)) flattenJson(v, label, rows, depth + 1);
     else if (Array.isArray(v)){
       if (v.length && typeof v[0] === 'object') { for (var i = 0; i < Math.min(v.length, 10); i++) flattenJson(v[i], label + ' ' + (i+1), rows, depth + 1); }
@@ -372,7 +377,10 @@ function paidIdentityRows(r){
   if (r.engine_capacity_cc) rows.push(['Engine', String(r.engine_capacity_cc) + 'cc']);
   if (r.dvla_body_desc) rows.push(['Body', r.dvla_body_desc]);
   if (r.first_registration_date) rows.push(['First registered', ymd(r.first_registration_date)]);
-  if (r.vehicle_identification_number) rows.push(['VIN', r.vehicle_identification_number]);
+  /* Never the full VIN: supplier licences prohibit showing it to consumers. The last five
+     are enough for a buyer to match the report to the V5C and the screen pillar. */
+  var vl5 = r.vin_last_5 || r.vinLast5 || (r.vehicle_identification_number ? String(r.vehicle_identification_number).slice(-5) : '');
+  if (vl5) rows.push(['VIN (last 5)', String(vl5)]);
   return rows;
 }
 function rowsTable(rows){
@@ -396,10 +404,10 @@ function reportPage(reg, supplierJson){
       (detail ? '<section class="card"><h2 style="margin-top:0">History detail</h2>' + detail + '</section>' : '') +
       (ident ? '<section class="card"><h2 style="margin-top:0">Vehicle identity</h2>' + ident +
         '<p class="meta">Check these against the V5C logbook and the car in front of you. A mismatch is the oldest warning sign there is.</p></section>' : '') +
-      '<section class="card"><details><summary style="cursor:pointer;font-weight:700">Every field our supplier returned</summary>' +
-      '<p class="meta">The raw record, for completeness.</p>' +
+      '<section class="card"><details><summary style="cursor:pointer;font-weight:700">Everything else on the record</summary>' +
+      '<p class="meta">The remaining fields, in supplier order. The full VIN is withheld under our data licence.</p>' +
       '<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>' +
-      flattenJson(j, '', [], 0).map(function(x){ return '<tr><td>' + esc(x[0]) + '</td><td>' + esc(x[1]) + '</td></tr>'; }).join('') +
+      flattenJson(r, '', [], 0).map(function(x){ return '<tr><td>' + esc(x[0]) + '</td><td>' + esc(x[1]) + '</td></tr>'; }).join('') +
       '</tbody></table></details></section>';
   } else {
     var rows = flattenJson(j, '', [], 0);
