@@ -135,6 +135,20 @@ function cacheGet(k){ var e = cache[k]; if (e && Date.now() < e.exp) return e.va
 function cacheSet(k, v){ cache[k] = { val: v, exp: Date.now() + 6*3600*1000 };
   var keys = Object.keys(cache); if (keys.length > 5000) { for (var i=0;i<1000;i++) delete cache[keys[i]]; } }
 
+/* Traefik APPENDS the real peer to whatever X-Forwarded-For the client sent, so the
+   FIRST entry is attacker-controlled and the LAST is not. Reading the first let anyone
+   rotate a fake value and walk past the DVSA quota guard. Count back from the end instead,
+   one step per trusted proxy. If this domain ever goes behind Cloudflare, set
+   TRUSTED_PROXY_HOPS=2 IN THE SAME CHANGE, not afterwards: with the wrong count every
+   visitor collapses into one bucket and a single abuser locks out everybody. */
+var TRUSTED_HOPS = Math.max(1, parseInt(process.env.TRUSTED_PROXY_HOPS || '1', 10) || 1);
+function clientIp(req){
+  var xs = String(req.headers['x-forwarded-for'] || '').split(',')
+    .map(function(s){ return s.trim(); }).filter(Boolean);
+  if (xs.length) return xs[Math.max(0, xs.length - TRUSTED_HOPS)];
+  return req.socket.remoteAddress || 'unknown';
+}
+
 var hits = {};
 function allowed(ip){
   var now = Date.now(), h = hits[ip];
@@ -1344,7 +1358,7 @@ http.createServer(function(req, res){
   if(path === '/app.js') return send(res, 200, 'application/javascript; charset=utf-8', CLIENT_JS, 'public, max-age=600');
 
   if(path === '/api/mot'){
-    var ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+    var ip = clientIp(req);
     if(!allowed(ip)) return send(res, 429, 'application/json', JSON.stringify({ error:'Too many lookups from this connection. Please try again later.' }), 'no-store');
     var reg = cleanReg(params.get('reg'));
     if(reg.length < 2) return send(res, 400, 'application/json', JSON.stringify({ error:'Enter a registration.' }), 'no-store');
@@ -1375,7 +1389,7 @@ http.createServer(function(req, res){
     if(!PAY_ENABLED){ res.writeHead(302, { Location: '/history-check' }); return res.end(); }
     var breg = cleanReg(params.get('reg'));
     if(breg.length < 2 || params.get('consent') !== 'yes'){ res.writeHead(302, { Location: '/history-check?checkout=missing' }); return res.end(); }
-    var bip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'unknown';
+    var bip = clientIp(req);
     if(!allowed('buy:' + bip)) return send(res, 429, 'text/plain; charset=utf-8', 'Too many attempts. Please try again later.', 'no-store');
     return createCheckout(breg).then(function(r){
       if(r.status === 200 && r.json && r.json.url){ res.writeHead(303, { Location: r.json.url }); return res.end(); }
