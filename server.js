@@ -430,7 +430,7 @@ function reportPage(reg, supplierJson){
   '<p class="meta">The full MOT history, mileage chart, buyer score and recall flag for ' + esc(reg) + ' are on the free checker, no purchase needed:</p>',
   '<p><a class="btn" style="text-decoration:none" href="/check/' + encodeURIComponent(reg) + '">Open the MOT report for ' + esc(reg) + '</a></p>',
   '</section>',
-  '<p class="meta">Something wrong with this report? Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> with this page&rsquo;s address. If we cannot deliver your data, we refund.</p>',
+  '<p class="meta">This report is licensed to you for this vehicle. Anyone with this link can read it, so keep the address to yourself. Something wrong with it? Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> with this page&rsquo;s address. If we cannot deliver your data, we refund.</p>',
   '</main>', footer()
   ].join('');
 }
@@ -687,7 +687,7 @@ function footer(){
   '<p>Data covers England, Scotland and Wales. Northern Ireland MOTs are administered by the DVA and are not included. An MOT is a roadworthiness snapshot on the day of the test, not a mechanical warranty, and this site is general information rather than advice on any individual purchase.</p>',
   '<p><a href="/guides">MOT guides</a> &middot; <a href="/compare">Compare two vehicles</a> &middot; <a href="/reminders">MOT reminders</a> &middot; <a href="/recalls">Recall check</a> &middot; <a href="/history-check">Full history check</a> &middot; <a href="/">Run a check</a></p>',
   '<p>Something wrong, out of date, or a vehicle we got wrong? Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> and a person will read it.</p>',
-  '<p><a href="/data-sources">Where our data comes from</a> &middot; <a href="/privacy">Privacy policy</a></p>',
+  '<p><a href="/data-sources">Where our data comes from</a> &middot; <a href="/privacy">Privacy policy</a>' + (PAY_ENABLED ? ' &middot; <a href="/terms">Terms of sale</a> &middot; <a href="/refunds">Refunds</a>' : '') + '</p>',
   '<p class="meta">Built by Ruhel Ahmed, Hertfordshire. Figures checked August 2026.</p>',
   '</div></footer></body></html>'
   ].join('');
@@ -933,6 +933,8 @@ function termsPage(){
   '<p>This is a digital product delivered immediately. Before payment you tick a box giving express consent to immediate delivery and acknowledging that you lose the statutory 14-day right to cancel once the report is delivered (Consumer Contracts Regulations 2013). Without that tick, the purchase does not proceed.</p>',
   '<h2>Refunds</h2>',
   '<p>Covered plainly on the <a href="/refunds">refund policy page</a>: if we cannot deliver your report, we refund.</p>',
+  '<h2>The report is licensed to you</h2>',
+  '<p>Our data suppliers licence each report to one customer for one vehicle. You may keep it, print it and show it to anyone helping you with that purchase, but you may not resell it or pass it on as a report for someone else&rsquo;s purchase. Anyone with the link can read the report, so treat it as private.</p>',
   '<h2>Liability</h2>',
   '<p>Nothing here limits liability for fraud, or for death or personal injury caused by negligence. Otherwise our total liability for a report is limited to the price you paid for it.</p>',
   '</section>',
