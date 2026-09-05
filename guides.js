@@ -294,7 +294,7 @@ const BUILTIN = [
 "<p><strong>Is clocking illegal?</strong> Adjusting an odometer is not an offence by itself. Selling the vehicle without disclosing the adjustment is, under the Consumer Protection from Unfair Trading Regulations.</p>",
 "<p><strong>Does the MOT history cover Northern Ireland?</strong> No. DVSA holds records for England, Scotland and Wales. Northern Ireland MOTs are run by the DVA and are not in this dataset.</p>",
 "<p><strong>Can a car have no odometer reading recorded?</strong> Yes. Older records and some tests show no reading, and our checker labels those honestly rather than guessing.</p>",
-"<p><strong>Is a paid HPI style check still worth it?</strong> For outstanding finance, theft markers and insurance write off categories, yes, because none of that is in the MOT data. For mileage and condition history, the free MOT record is usually enough.</p>"
+"<p><strong>Is a paid vehicle history check still worth it?</strong> For outstanding finance, theft markers and insurance write off categories, yes, because none of that is in the MOT data. For mileage and condition history, the free MOT record is usually enough.</p>"
  ].join('')
 }
 ];

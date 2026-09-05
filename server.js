@@ -1041,7 +1041,9 @@ function dataSourcesPage(){
    moves. The button fires the GA4 event paid_check_intent and says honestly that the paid
    report is not live yet. NO payment, NO card fields, NO data-supplier calls from here.
    Launch gate and the full build plan live in VDG-IMPLEMENTATION-PLAN.md (emo-data).
-   NEVER use the word "HPI" on this page — registered trade mark of HPI Limited. ---- */
+   NEVER name the trade-marked three-letter provenance-check brand anywhere on this
+   site: its owner enforces it. Say "vehicle history check". This comment deliberately
+   avoids the token so a grep for it only ever returns real violations. ---- */
 function historyCheckPage(){
   var faq = [
     { q:'What would the full history check cover?',
