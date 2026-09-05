@@ -135,7 +135,7 @@ const CSS = [
 ".consent .no{background:transparent;color:var(--brand);border:1.5px solid var(--line)}"
 ].join('');
 
-const AUTHOR = "Written by Ruhul Amin, Hertfordshire. I built the free MOT history checker on this site. I am not a mechanic, so everything here is sourced from DVSA and GOV.UK rather than from opinion.";
+const AUTHOR = "Written by Ruhel Ahmed, Hertfordshire. I built the free MOT history checker on this site. I am not a mechanic, so everything here is sourced from DVSA and GOV.UK rather than from opinion.";
 const DISCLAIM = "This guide is general information about the MOT test in England, Scotland and Wales. It is not legal advice and it is not a substitute for a qualified mechanic looking at your vehicle.";
 
 const BUILTIN = [
@@ -575,7 +575,7 @@ function articleJsonLd(g){
   "headline": g.title, "description": g.desc,
   "image": SITE + "/og.png",
   "datePublished": g.date, "dateModified": g.date,
-  "author": {"@type":"Person","name":"Ruhul Amin"},
+  "author": {"@type":"Person","name":"Ruhel Ahmed"},
   "publisher": {"@type":"Organization","name":"MOT Check UK","url":SITE},
   "mainEntityOfPage": SITE + "/guides/" + g.slug,
   "inLanguage":"en-GB"
@@ -613,7 +613,7 @@ function guidePage(g){
   head(g.title + " | MOT Check UK", g.desc, SITE + "/guides/" + g.slug, articleJsonLd(g)),
   "<p class='meta'><a href='/'>Home</a> &rsaquo; <a href='/guides'>Guides</a></p>",
   "<h1>" + esc(g.title) + "</h1>",
-  "<p class='meta'>By Ruhul Amin &middot; Published " + (fmtDate(g.date) || '21 August 2026') + " &middot; " + g.mins + " min read &middot; Figures checked " + fmtChecked(g.date) + "</p>",
+  "<p class='meta'>By Ruhel Ahmed &middot; Published " + (fmtDate(g.date) || '21 August 2026') + " &middot; " + g.mins + " min read &middot; Figures checked " + fmtChecked(g.date) + "</p>",
   g.body,
   "<div class='card'><strong>Check a vehicle now</strong><p class='meta'>Free, no sign up. Full MOT history, mileage chart and an automatic buyer report from DVSA data.</p><p><a class='cta' href='/'>Run a free MOT check</a></p></div>",
   related(g.slug),

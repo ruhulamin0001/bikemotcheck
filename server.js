@@ -629,7 +629,7 @@ function jsonLd(faqList){
     description:'Free MOT history check for any UK registration. Full test history, mileage chart and an automatic buyer report built from DVSA data.',
     offers:{'@type':'Offer',price:'0',priceCurrency:'GBP'}, inLanguage:'en-GB'
   };
-  var org = { '@context':'https://schema.org','@type':'Organization', name:'MOT Check UK', url:SITE, logo:SITE + '/icon.svg', founder:{'@type':'Person',name:'Ruhul Amin'} };
+  var org = { '@context':'https://schema.org','@type':'Organization', name:'MOT Check UK', url:SITE, logo:SITE + '/icon.svg', founder:{'@type':'Person',name:'Ruhel Ahmed'} };
   var site = { '@context':'https://schema.org','@type':'WebSite', name:'MOT Check UK', url:SITE,
     potentialAction:{'@type':'SearchAction',target:{'@type':'EntryPoint',urlTemplate:SITE + '/check/{search_term_string}'},'query-input':'required name=search_term_string'} };
   var out = [app, org, site];
@@ -688,7 +688,7 @@ function footer(){
   '<p><a href="/guides">MOT guides</a> &middot; <a href="/compare">Compare two vehicles</a> &middot; <a href="/reminders">MOT reminders</a> &middot; <a href="/recalls">Recall check</a> &middot; <a href="/history-check">Full history check</a> &middot; <a href="/">Run a check</a></p>',
   '<p>Something wrong, out of date, or a vehicle we got wrong? Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> and a person will read it.</p>',
   '<p><a href="/data-sources">Where our data comes from</a> &middot; <a href="/privacy">Privacy policy</a></p>',
-  '<p class="meta">Built by Ruhul Amin, Hertfordshire. Figures checked August 2026.</p>',
+  '<p class="meta">Built by Ruhel Ahmed, Hertfordshire. Figures checked August 2026.</p>',
   '</div></footer></body></html>'
   ].join('');
 }
@@ -924,7 +924,7 @@ function termsPage(){
   '<p class="sub">These cover the paid vehicle history report only. The free MOT checker has no terms to speak of: it is free, we store nothing, and we hope it is useful.</p>',
   '<section>',
   '<h2>Who you are buying from</h2>',
-  '<p>The paid report is sold by Ruhul Amin, trading as MOT Check UK, Hertfordshire, England. Contact: <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a>.' + (ICO_NUMBER ? ' ICO registration: ' + esc(ICO_NUMBER) + '.' : '') + '</p>',
+  '<p>The paid report is sold by Ruhel Ahmed, trading as MOT Check UK, Hertfordshire, England. Contact: <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a>.' + (ICO_NUMBER ? ' ICO registration: ' + esc(ICO_NUMBER) + '.' : '') + '</p>',
   '<h2>What you are buying</h2>',
   '<p>A one-off digital report for the registration you enter, compiled at the moment of purchase from licensed third-party databases (outstanding finance, insurance write-off, stolen marker, keeper and plate history, valuation where available) together with the public DVSA MOT record.</p>',
   '<h2>What the report is, and is not</h2>',
@@ -969,7 +969,7 @@ function privacyPage(){
   '<p class="sub">The short version: this site has no accounts, stores no registrations in any database, and loads no analytics unless you press Allow. The long version follows, and all of it is true rather than boilerplate.</p>',
   '<section>',
   '<h2>Who runs this site</h2>',
-  '<p>MOT Check UK is run by Ruhul Amin, Hertfordshire, England. For anything on this page, email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> and a person will read it.</p>',
+  '<p>MOT Check UK is run by Ruhel Ahmed, Hertfordshire, England. For anything on this page, email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> and a person will read it.</p>',
   '<h2>Registrations you look up</h2>',
   '<p>When you check a vehicle, the registration is sent to the DVSA MOT History API to fetch the record, and the response is cached in server memory for a few hours so repeated searches do not hit the DVSA quota. That cache clears when the server restarts. Registrations are never written to a database, never linked to you, and never sent to any analytics service.</p>',
   '<h2>What stays in your own browser</h2>',
