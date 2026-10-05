@@ -641,7 +641,7 @@ function jsonLd(faqList){
     description:'Free MOT history check for any UK registration. Full test history, mileage chart and an automatic buyer report built from DVSA data.',
     offers:{'@type':'Offer',price:'0',priceCurrency:'GBP'}, inLanguage:'en-GB'
   };
-  var org = { '@context':'https://schema.org','@type':'Organization', name:'MOT Check UK', url:SITE, logo:SITE + '/icon.svg', founder:{'@type':'Person',name:'Ruhel Ahmed'} };
+  var org = { '@context':'https://schema.org','@type':'Organization', name:'MOT Check UK', url:SITE, logo:SITE + '/icon.svg', founder:{'@type':'Person',name:'Ruhul Amin'} };
   var site = { '@context':'https://schema.org','@type':'WebSite', name:'MOT Check UK', url:SITE,
     potentialAction:{'@type':'SearchAction',target:{'@type':'EntryPoint',urlTemplate:SITE + '/check/{search_term_string}'},'query-input':'required name=search_term_string'} };
   var out = [app, org, site];
@@ -700,7 +700,7 @@ function footer(){
   '<p><a href="/guides">MOT guides</a> &middot; <a href="/compare">Compare two vehicles</a> &middot; <a href="/reminders">MOT reminders</a> &middot; <a href="/recalls">Recall check</a> &middot; <a href="/history-check">Full history check</a> &middot; <a href="/">Run a check</a></p>',
   '<p>Something wrong, out of date, or a vehicle we got wrong? Email <a href="mailto:support@jagatitlimited.com">support@jagatitlimited.com</a> and a person will read it.</p>',
   '<p><a href="/data-sources">Where our data comes from</a> &middot; <a href="/privacy">Privacy policy</a>' + (PAY_ENABLED ? ' &middot; <a href="/terms">Terms of sale</a> &middot; <a href="/refunds">Refunds</a>' : '') + '</p>',
-  '<p class="meta">Built by Ruhel Ahmed, Hertfordshire. Figures checked August 2026.</p>',
+  '<p class="meta">Built by Ruhul Amin, Hertfordshire. Figures checked August 2026.</p>',
   '<p class="meta">MOT Check UK is a trading name of Jagat IT UK Ltd, registered in England and Wales, company number 17474995. Registered office: 164 High Street, London Colney, St Albans, Hertfordshire, AL2 1QF.</p>',
   '</div></footer></body></html>'
   ].join('');
