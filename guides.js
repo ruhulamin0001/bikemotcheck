@@ -539,7 +539,8 @@ function foot(){
  "<footer><p>", DISCLAIM, "</p>",
  "<p>Sources: GOV.UK Getting an MOT, DVSA MOT testing data, DVSA MOT History API. Figures checked August 2026.</p>",
  "<p><a href='/guides'>All guides</a> &middot; <a href='/'>MOT history checker</a></p></footer>",
- "<p>Something wrong or out of date? Email <a href='mailto:support@adminruhulamin.co.uk'>support@adminruhulamin.co.uk</a> and a person will read it.</p>",
+ "<p>Something wrong or out of date? Email <a href='mailto:support@jagatitlimited.com'>support@jagatitlimited.com</a> and a person will read it.</p>",
+ "<p>MOT Check UK is a trading name of Jagat IT UK Ltd, registered in England and Wales, company number 17474995. Registered office: 164 High Street, London Colney, St Albans, Hertfordshire, AL2 1QF.</p>",
 '<script>' + [
 '(function(){',
 'var K="bmc_consent_v1",G="G-VX0H5Z7VVV";',

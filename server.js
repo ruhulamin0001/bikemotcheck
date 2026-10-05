@@ -444,7 +444,7 @@ function reportPage(reg, supplierJson){
   '<p class="meta">The full MOT history, mileage chart, buyer score and recall flag for ' + esc(reg) + ' are on the free checker, no purchase needed:</p>',
   '<p><a class="btn" style="text-decoration:none" href="/check/' + encodeURIComponent(reg) + '">Open the MOT report for ' + esc(reg) + '</a></p>',
   '</section>',
-  '<p class="meta">This report is licensed to you for this vehicle. Anyone with this link can read it, so keep the address to yourself. Something wrong with it? Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> with this page&rsquo;s address. If we cannot deliver your data, we refund.</p>',
+  '<p class="meta">This report is licensed to you for this vehicle. Anyone with this link can read it, so keep the address to yourself. Something wrong with it? Email <a href="mailto:support@jagatitlimited.com">support@jagatitlimited.com</a> with this page&rsquo;s address. If we cannot deliver your data, we refund.</p>',
   '</main>', footer()
   ].join('');
 }
@@ -698,9 +698,10 @@ function footer(){
   '<p><strong>MOT Check UK</strong> reads the official DVSA MOT History API. It is free, needs no account, and we do not store the registrations you look up.</p>',
   '<p>Data covers England, Scotland and Wales. Northern Ireland MOTs are administered by the DVA and are not included. An MOT is a roadworthiness snapshot on the day of the test, not a mechanical warranty, and this site is general information rather than advice on any individual purchase.</p>',
   '<p><a href="/guides">MOT guides</a> &middot; <a href="/compare">Compare two vehicles</a> &middot; <a href="/reminders">MOT reminders</a> &middot; <a href="/recalls">Recall check</a> &middot; <a href="/history-check">Full history check</a> &middot; <a href="/">Run a check</a></p>',
-  '<p>Something wrong, out of date, or a vehicle we got wrong? Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> and a person will read it.</p>',
+  '<p>Something wrong, out of date, or a vehicle we got wrong? Email <a href="mailto:support@jagatitlimited.com">support@jagatitlimited.com</a> and a person will read it.</p>',
   '<p><a href="/data-sources">Where our data comes from</a> &middot; <a href="/privacy">Privacy policy</a>' + (PAY_ENABLED ? ' &middot; <a href="/terms">Terms of sale</a> &middot; <a href="/refunds">Refunds</a>' : '') + '</p>',
   '<p class="meta">Built by Ruhel Ahmed, Hertfordshire. Figures checked August 2026.</p>',
+  '<p class="meta">MOT Check UK is a trading name of Jagat IT UK Ltd, registered in England and Wales, company number 17474995. Registered office: 164 High Street, London Colney, St Albans, Hertfordshire, AL2 1QF.</p>',
   '</div></footer></body></html>'
   ].join('');
 }
@@ -919,7 +920,7 @@ function termsPage(){
   '<p class="sub">These cover the paid vehicle history report only. The free MOT checker has no terms to speak of: it is free, we store nothing, and we hope it is useful.</p>',
   '<section>',
   '<h2>Who you are buying from</h2>',
-  '<p>The paid report is sold by Ruhel Ahmed, trading as MOT Check UK, Hertfordshire, England. Contact: <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a>.' + (ICO_NUMBER ? ' ICO registration: ' + esc(ICO_NUMBER) + '.' : '') + '</p>',
+  '<p>The paid report is sold by Jagat IT UK Ltd, trading as MOT Check UK, registered in England and Wales, company number 17474995, registered office 164 High Street, London Colney, St Albans, Hertfordshire, AL2 1QF. Contact: <a href="mailto:support@jagatitlimited.com">support@jagatitlimited.com</a>.' + (ICO_NUMBER ? ' ICO registration: ' + esc(ICO_NUMBER) + '.' : '') + '</p>',
   '<h2>What you are buying</h2>',
   '<p>A one-off digital report for the registration you enter, compiled at the moment of purchase from licensed third-party databases (outstanding finance, insurance write-off, stolen marker, keeper and plate history, valuation where available) together with the public DVSA MOT record.</p>',
   '<h2>What the report is, and is not</h2>',
@@ -947,7 +948,7 @@ function refundsPage(){
   '<p><strong>We refund in full if we cannot deliver a report for your registration.</strong> That includes our data supplier failing to answer and the report page telling you so.</p>',
   '<p>We do not refund because you did not like what the report said: the report is the product, whatever it reveals. And we cannot refund lookups where the data supplier has already charged us for a successfully returned answer.</p>',
   '<p>If a report is wrong because we made an error, tell us: we will refund it and fix the error.</p>',
-  '<p>To claim, email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> with the address of your report page. A person reads it, usually the same day.</p>',
+  '<p>To claim, email <a href="mailto:support@jagatitlimited.com">support@jagatitlimited.com</a> with the address of your report page. A person reads it, usually the same day.</p>',
   '</section>',
   '</main>', footer()
   ].join('');
@@ -966,7 +967,7 @@ function privacyPage(){
   '<p class="sub">The short version: this site has no accounts, stores no registrations in any database, and loads no analytics unless you press Allow. The long version follows, and all of it is true rather than boilerplate.</p>',
   '<section>',
   '<h2>Who runs this site</h2>',
-  '<p>MOT Check UK is run by Ruhel Ahmed, Hertfordshire, England. For anything on this page, email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> and a person will read it.</p>',
+  '<p>MOT Check UK is a trading name of Jagat IT UK Ltd, registered in England and Wales, company number 17474995. Registered office: 164 High Street, London Colney, St Albans, Hertfordshire, AL2 1QF. For anything on this page, email <a href="mailto:support@jagatitlimited.com">support@jagatitlimited.com</a> and a person will read it.</p>',
   '<h2>Registrations you look up</h2>',
   '<p>When you check a vehicle, the registration is sent to the DVSA MOT History API to fetch the record, and the response is cached in server memory for a few hours so repeated searches do not hit the DVSA quota. That cache clears when the server restarts. Registrations are never written to a database, never linked to you, and never sent to any analytics service.</p>',
   '<h2>What stays in your own browser</h2>',
@@ -1088,7 +1089,7 @@ function historyCheckPage(){
   '<p class="meta" style="margin-top:12px"><label><input type="checkbox" name="consent" value="yes" required> Deliver my report immediately. I understand that once it is delivered I lose my 14-day right to cancel this purchase.</label></p>',
   '</form>',
   '<p class="meta">Payment is handled by Stripe. We never see your card number. If we cannot deliver a report for your registration, <a href="/refunds">we refund</a>. Buying means agreeing to the <a href="/terms">terms of sale</a>.</p>',
-  '<p class="meta">Three-report pack at &pound;11.99 is coming shortly; email <a href="mailto:support@adminruhulamin.co.uk">support</a> to be told when.</p>',
+  '<p class="meta">Three-report pack at &pound;11.99 is coming shortly; email <a href="mailto:support@jagatitlimited.com">support</a> to be told when.</p>',
   '</div>'
   ].join('') : [
   '<div class="card glass" style="text-align:center">',
@@ -1222,7 +1223,7 @@ function tradePage(){
   '</ol>',
   '<h2>What we are building</h2>',
   '<p>Bulk checking is the next thing on the list: paste or upload a list of registrations, get the MOT history for all of them back in one table you can export. It is not built yet and we are not taking sign-ups or payment for it. If it would be useful, say so and say roughly how many vehicles a month you would run, because that decides whether it is worth building.</p>',
-  '<p>Email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a>. A person reads it.</p>',
+  '<p>Email <a href="mailto:support@jagatitlimited.com">support@jagatitlimited.com</a>. A person reads it.</p>',
   '<h2>The commercial position, stated plainly</h2>',
   '<p>This site is free and stays free for the MOT record, because the MOT record is public data and charging for it would be indefensible. If a paid product ever appears here it will be for data we have had to licence, it will say exactly what is in it before you pay, and it will be priced against what the market actually charges rather than against the old anchor.</p>',
   '<h2>Frequently asked</h2>',
@@ -1404,7 +1405,7 @@ http.createServer(function(req, res){
       }).then(function(h){
         if(h.status !== 200 || !h.json){
           console.log('supplier failed for paid session ' + sid + ': http ' + h.status + ' reg ' + preg + ' json=' + (h.json ? 'yes' : 'no'));
-          return send(res, 200, 'text/html; charset=utf-8', head('Report delayed | MOT Check UK', 'Report delayed.', SITE + '/history-check', null) + '<main class="wrap"><h1>Your report is delayed</h1><p>Your payment for ' + esc(preg) + ' succeeded but our data supplier did not answer. Refresh this page in a minute; if it still fails, email <a href="mailto:support@adminruhulamin.co.uk">support@adminruhulamin.co.uk</a> with this page&rsquo;s address and we will deliver it or refund you.</p></main>' + footer(), 'no-store');
+          return send(res, 200, 'text/html; charset=utf-8', head('Report delayed | MOT Check UK', 'Report delayed.', SITE + '/history-check', null) + '<main class="wrap"><h1>Your report is delayed</h1><p>Your payment for ' + esc(preg) + ' succeeded but our data supplier did not answer. Refresh this page in a minute; if it still fails, email <a href="mailto:support@jagatitlimited.com">support@jagatitlimited.com</a> with this page&rsquo;s address and we will deliver it or refund you.</p></main>' + footer(), 'no-store');
         }
         var page = reportPage(preg, h.json);
         paidReports[sid] = page;
